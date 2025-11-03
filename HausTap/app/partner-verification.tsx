@@ -112,13 +112,7 @@ export default function PartnerVerification() {
             {
               text: 'OK',
               onPress: () => {
-                router.push({
-                  pathname: '/partner-form',
-                  params: {
-                    email: email,
-                    services: services
-                  }
-                });
+                router.replace('/partner-onboarding-success');
               }
             }
           ]
