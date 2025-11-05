@@ -1,10 +1,6 @@
 import { Stack } from "expo-router";
 
+// Allow file-based routing to register all screens automatically.
 export default function RootLayout() {
-  return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
-    </Stack>
-  );
+  return <Stack />;
 }

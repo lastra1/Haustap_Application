@@ -1,14 +1,13 @@
-import React, { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
 import {
-  View,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Alert,
+  View
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { handleSignUp } from "../controllers/AuthController";
 
 export default function SignUpScreen() {
@@ -26,6 +25,7 @@ export default function SignUpScreen() {
     phone: "",
     password: "",
     confirmPassword: "",
+    userType: "client", // default to client
   });
 
   const handleChange = (field, value) => {
@@ -37,6 +37,34 @@ export default function SignUpScreen() {
       {/* Logo */}
       <Text style={styles.logo}>🏠 HausTap</Text>
       <Text style={styles.title}>Create your account</Text>
+
+      {/* Account Type Selection */}
+      <View style={styles.accountTypeContainer}>
+        <TouchableOpacity
+          style={[
+            styles.accountTypeButton,
+            form.userType === "client" && styles.selectedAccountType
+          ]}
+          onPress={() => handleChange("userType", "client")}
+        >
+          <Text style={[
+            styles.accountTypeText,
+            form.userType === "client" && styles.selectedAccountTypeText
+          ]}>Client</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.accountTypeButton,
+            form.userType === "provider" && styles.selectedAccountType
+          ]}
+          onPress={() => handleChange("userType", "provider")}
+        >
+          <Text style={[
+            styles.accountTypeText,
+            form.userType === "provider" && styles.selectedAccountTypeText
+          ]}>Service Provider</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Name Inputs */}
       <View style={styles.row}>
@@ -173,6 +201,34 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#F7F9FA",
     alignItems: "center",
+  },
+  accountTypeContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    width: "100%",
+    marginBottom: 20,
+    gap: 10,
+  },
+  accountTypeButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#CCC",
+    alignItems: "center",
+    backgroundColor: "#FFF",
+  },
+  selectedAccountType: {
+    borderColor: "#00BFA6",
+    backgroundColor: "#E6F7F5",
+  },
+  accountTypeText: {
+    color: "#666",
+    fontWeight: "500",
+  },
+  selectedAccountTypeText: {
+    color: "#00BFA6",
+    fontWeight: "600",
   },
   logo: {
     fontSize: 28,

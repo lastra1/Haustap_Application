@@ -10,7 +10,7 @@ export default function Index() {
     // "Attempted to navigate before mounting the Root Layout" errors.
     const timer = setTimeout(() => {
       if (SHOW_CLIENT_HOME) {
-        router.replace("/client-side");
+        router.replace("/service-provider");
       } else {
         // When ready, set the flag to false to route to signup (partner flow)
         router.replace("/partner");
