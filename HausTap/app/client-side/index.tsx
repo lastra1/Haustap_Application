@@ -3,18 +3,80 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import CategoryButton from "./components/CategoryButton";
 
 export default function ClientHomeScreen() {
   const router = useRouter();
+  const [search, setSearch] = React.useState("");
+
+  const searchIndex = [
+    // Top-level categories
+    { title: "Cleaning Services", route: "/client-side/cleaning-services" },
+    { title: "Indoor Services", route: "/client-side/indoor-services" },
+    { title: "Outdoor Services", route: "/client-side/outdoor-services" },
+    { title: "Beauty Services", route: "/client-side/beauty-services" },
+    { title: "Wellness Services", route: "/client-side/wellness-services" },
+    { title: "Tech & Gadget Services", route: "/client-side/tech-gadget-services" },
+
+    // Home cleaning subpages
+    { title: "Bungalow", route: "/client-side/cleaning-services/homeCleaning/bungalow" },
+    { title: "Condominium Studio / 1BR", route: "/client-side/cleaning-services/homeCleaning/condo-studio" },
+    { title: "Condominium 2BR", route: "/client-side/cleaning-services/homeCleaning/condominium2br" },
+    { title: "Condominium Penthouse", route: "/client-side/cleaning-services/homeCleaning/penthouse" },
+    { title: "Duplex Smaller", route: "/client-side/cleaning-services/homeCleaning/duplex-smaller" },
+    { title: "Duplex Larger", route: "/client-side/cleaning-services/homeCleaning/duplex-larger" },
+    { title: "Container House Single", route: "/client-side/cleaning-services/homeCleaning/container-house-single" },
+    { title: "Container House Multiple", route: "/client-side/cleaning-services/homeCleaning/container-house-multiple" },
+    { title: "Stilt House Small", route: "/client-side/cleaning-services/homeCleaning/stilt-house-small" },
+    { title: "Stilt House Large", route: "/client-side/cleaning-services/homeCleaning/stilt-house-large" },
+    { title: "Mansion Smaller", route: "/client-side/cleaning-services/homeCleaning/mansion-smaller" },
+    { title: "Mansion Larger", route: "/client-side/cleaning-services/homeCleaning/mansion-larger" },
+    { title: "Villa Smaller", route: "/client-side/cleaning-services/homeCleaning/villa-smaller" },
+    { title: "Villa Larger", route: "/client-side/cleaning-services/homeCleaning/villa-larger" },
+
+    // AC cleaning
+    { title: "AC Cleaning", route: "/client-side/cleaning-services/ACcleaning" },
+    { title: "AC Deep Cleaning", route: "/client-side/cleaning-services/ACdeepCleaning" },
+
+    // Beauty
+    { title: "Hair Services", route: "/client-side/beauty-services/hair" },
+    { title: "Nail Care", route: "/client-side/beauty-services/nailCare" },
+    { title: "Nails", route: "/client-side/beauty-services/nails" },
+    { title: "Make-up", route: "/client-side/beauty-services/makeup" },
+    { title: "Lashes", route: "/client-side/beauty-services/lashes" },
+    { title: "Beauty Packages", route: "/client-side/beauty-services/packages" },
+
+    // Wellness
+    { title: "Massage", route: "/client-side/wellness-services/massage" },
+    { title: "Wellness Packages", route: "/client-side/wellness-services/packages" },
+    { title: "Spa", route: "/client-side/wellness-services/spa" },
+    { title: "Therapy", route: "/client-side/wellness-services/therapy" },
+
+    // Tech & Gadget
+    { title: "Mobile Phone", route: "/client-side/tech-gadget-services/mobile" },
+    { title: "Laptop & Desktop PC", route: "/client-side/tech-gadget-services/computer" },
+    { title: "Tablet & iPad", route: "/client-side/tech-gadget-services/tablet" },
+    { title: "Game & Console", route: "/client-side/tech-gadget-services/gaming" },
+
+    // Indoor services (examples)
+    { title: "Appliance Repair", route: "/client-side/indoor-services/applianceRepair" },
+    { title: "Electrical", route: "/client-side/indoor-services/electrical" },
+    { title: "Handyman", route: "/client-side/indoor-services/handyman" },
+    { title: "Pest Control (Indoor)", route: "/client-side/indoor-services/pestControl" },
+    { title: "Plumbing", route: "/client-side/indoor-services/plumbing" },
+  ];
+
+  const results = search.trim()
+    ? searchIndex.filter(item => item.title.toLowerCase().includes(search.trim().toLowerCase()))
+    : [];
   return (
     <View style={{ flex: 1, backgroundColor: "#f8f9fa" }}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -37,9 +99,30 @@ export default function ClientHomeScreen() {
               placeholder="Search services"
               placeholderTextColor="#888"
               style={styles.searchInput}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
             />
             <Ionicons name="search" size={20} color="#888" />
           </View>
+
+          {/* Search results dropdown */}
+          {results.length > 0 && (
+            <View style={styles.searchResults}>
+              {results.slice(0, 8).map((r) => (
+                <TouchableOpacity
+                  key={r.route}
+                  style={styles.resultItem}
+                  onPress={() => {
+                    setSearch("");
+                    router.push(r.route as any);
+                  }}
+                >
+                  <Text style={styles.resultText}>{r.title}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Categories */}
@@ -57,13 +140,25 @@ export default function ClientHomeScreen() {
               key={category}
               title={category}
               onPress={() => {
-                if (category === "Cleaning Services") {
-                  router.push("/client-side/booking");
-                } else if (category === "Indoor Services") {
-                  // Open booking with Indoor Services preselected and default to Handyman
-                  router.push(
-                    `/client-side/booking?service=${encodeURIComponent("Indoor Services")}&sub=${encodeURIComponent("Handyman")}`
-                  );
+                switch(category) {
+                  case "Cleaning Services":
+                    router.push("/client-side/cleaning-services");
+                    break;
+                  case "Indoor Services":
+                    router.push("/client-side/indoor-services");
+                    break;
+                  case "Outdoor Services":
+                    router.push("/client-side/outdoor-services");
+                    break;
+                  case "Beauty Services":
+                    router.push("/client-side/beauty-services");
+                    break;
+                  case "Tech & Gadget Services":
+                    router.push("/client-side/tech-gadget-services");
+                    break;
+                  case "Wellness Services":
+                    router.push("/client-side/wellness-services");
+                    break;
                 }
               }}
             />
@@ -177,17 +272,17 @@ export default function ClientHomeScreen() {
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/client-booking-summary/booking-pending')}>
           <Ionicons name="calendar-outline" size={22} color="#3DC1C6" />
           <Text style={styles.navText}>Bookings</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push({ pathname: '/client-side/chat' } as any)}>
           <Ionicons name="chatbubble-outline" size={22} color="#3DC1C6" />
           <Text style={styles.navText}>Chat</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/client-profile')}>
           <Ionicons name="person-outline" size={22} color="#3DC1C6" />
           <Text style={styles.navText}>Profile</Text>
         </TouchableOpacity>
@@ -245,6 +340,25 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginRight: 8,
+  },
+  searchResults: {
+    position: "absolute",
+    top: 170,
+    left: "5%",
+    width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    elevation: 6,
+    zIndex: 1000,
+    maxHeight: 240,
+  },
+  resultItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  resultText: {
+    fontSize: 16,
   },
   sectionTitle: {
     fontWeight: "bold",
