@@ -27,7 +27,7 @@ export default function ChatsScreen() {
       onPress={() =>
         item.name === 'Cj Garcia'
           ? router.push('/service-provider/chatbox-team')
-          : router.push('/chatbox-individual')
+          : router.push('/service-provider/chatbox-individual')
       }
     >
       <View

@@ -1,6 +1,6 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function BookingSummary() {
   const router = useRouter();
@@ -27,7 +27,7 @@ export default function BookingSummary() {
 
       <TouchableOpacity
         style={styles.nextButton}
-        onPress={() => router.push("/bookingStatus")} // you can change this later
+        onPress={() => router.push("/client-side/booking-status")} // navigate to booking-status
       >
         <Text style={styles.nextButtonText}>Confirm Booking</Text>
       </TouchableOpacity>

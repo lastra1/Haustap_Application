@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   PanResponder,
@@ -10,56 +10,70 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 export default function BookingsScreen() {
   const [isAccepted, setIsAccepted] = useState(false);
   const pan = useRef(new Animated.Value(0)).current;
+  const [sliderWidth, setSliderWidth] = useState(0);
+  const panResponderRef = useRef<any>(null);
 
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onPanResponderMove: (_, gesture: PanResponderGestureState) => {
-      const maxSlide = 240;
-      const newValue = Math.max(0, Math.min(gesture.dx, maxSlide));
-      pan.setValue(newValue);
-    },
-    onPanResponderRelease: (_, gesture: PanResponderGestureState) => {
-      const maxSlide = 240;
-      if (gesture.dx >= maxSlide * 0.8) {
-        Animated.spring(pan, {
-          toValue: maxSlide,
-          useNativeDriver: true,
-          friction: 8,
-          tension: 40,
-        }).start(() => {
-          if (!isAccepted) {
-            setIsAccepted(true);
-          }
-        });
-      } else {
-        Animated.spring(pan, {
-          toValue: 0,
-          useNativeDriver: true,
-          friction: 8,
-          tension: 40,
-        }).start();
-      }
-    },
-  });
+  // ✅ Slide button setup
+  useEffect(() => {
+    const knobWidth = 50;
 
-  // Cancel handler: prevents double taps and ensures navigation is triggered
+    panResponderRef.current = PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+
+      onPanResponderMove: (_evt, gesture: PanResponderGestureState) => {
+        const maxSlide = Math.max(0, sliderWidth - knobWidth);
+        const newValue = Math.min(Math.max(gesture.dx, 0), maxSlide);
+        pan.setValue(newValue);
+      },
+
+      onPanResponderRelease: (_evt, gesture: PanResponderGestureState) => {
+        const maxSlide = Math.max(0, sliderWidth - knobWidth);
+        const threshold = maxSlide * 0.8;
+
+        if (gesture.dx >= threshold) {
+          // Complete slide → navigate
+          Animated.timing(pan, {
+            toValue: maxSlide,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            if (!isAccepted) {
+              setIsAccepted(true);
+              try {
+                router.push("/service-provider/before-ongoing");
+              } catch (err) {
+                console.error("Navigation failed", err);
+              }
+            }
+          });
+        } else {
+          // Snap back
+          Animated.spring(pan, {
+            toValue: 0,
+            useNativeDriver: true,
+            friction: 8,
+            tension: 40,
+          }).start();
+        }
+      },
+    });
+  }, [sliderWidth, pan, isAccepted]);
+
   const [isCancelling, setIsCancelling] = useState(false);
   const handleCancel = useCallback(() => {
     if (isCancelling) return;
     setIsCancelling(true);
     try {
-      // navigate to cancelled screen
-      router.push('/service-provider/booking-process-cancelled');
+      router.push("/service-provider/booking-process-cancelled");
     } catch (err) {
-      // keep user able to try again if navigation fails
-      // eslint-disable-next-line no-console
-      console.error('Failed to navigate to cancelled screen', err);
+      console.error("Failed to navigate to cancelled screen", err);
       setIsCancelling(false);
     }
   }, [isCancelling]);
@@ -68,7 +82,7 @@ export default function BookingsScreen() {
     <View style={styles.page}>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: 160 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -76,14 +90,12 @@ export default function BookingsScreen() {
 
         {/* Tabs */}
         <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tabButton, styles.tabActive]}
-          >
+          <TouchableOpacity style={[styles.tabButton, styles.tabActive]}>
             <Text style={[styles.tabText, styles.tabTextActive]}>Pending</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
-            style={[styles.tabButton]}
+            style={styles.tabButton}
             onPress={() => router.push("/service-provider/before-ongoing")}
           >
             <Text style={styles.tabText}>Ongoing</Text>
@@ -96,11 +108,17 @@ export default function BookingsScreen() {
             <Text style={styles.tabText}>Completed</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabButton} onPress={() => router.push("/service-provider/booking-process-cancelled")}>
+          <TouchableOpacity
+            style={styles.tabButton}
+            onPress={() => router.push("/service-provider/booking-process-cancelled")}
+          >
             <Text style={styles.tabText}>Cancelled</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tabButton} onPress={() => router.push("/service-provider/booking-process-return")}>
+          <TouchableOpacity
+            style={styles.tabButton}
+            onPress={() => router.push("/service-provider/booking-process-return")}
+          >
             <Text style={styles.tabText}>Return</Text>
           </TouchableOpacity>
         </View>
@@ -135,7 +153,7 @@ export default function BookingsScreen() {
           <View style={styles.section}>
             <Text style={styles.label}>Address</Text>
             <Text style={styles.value}>
-              B1 L50 Mango st. Phase 1 Saint Joseph Village 10{"\n"}
+              B1 L50 Mango St. Phase 1 Saint Joseph Village 10{"\n"}
               Barangay Langgam, City of San Pedro, Laguna 4023
             </Text>
           </View>
@@ -151,9 +169,9 @@ export default function BookingsScreen() {
           <View style={styles.section}>
             <Text style={styles.label}>Inclusions:</Text>
             <Text style={styles.value}>
-              Living Room: walls, mop, dusting furniture, trash removal,{"\n"}
-              Bedrooms: bed making, sweeping, dusting, trash removal,{"\n"}
-              Hallways: mop & sweep, remove cobwebs,{"\n"}
+              Living Room: walls, mop, dusting furniture, trash removal{"\n"}
+              Bedrooms: bed making, sweeping, dusting, trash removal{"\n"}
+              Hallways: mop & sweep, remove cobwebs{"\n"}
               Windows & Mirrors: quick wipe
             </Text>
           </View>
@@ -161,7 +179,7 @@ export default function BookingsScreen() {
           {/* Notes */}
           <View style={styles.section}>
             <Text style={styles.label}>Notes:</Text>
-            <TextInput style={styles.textArea} placeholder=" " multiline />
+            <TextInput style={styles.textArea} placeholder="Enter notes..." multiline />
           </View>
 
           {/* Voucher */}
@@ -170,6 +188,7 @@ export default function BookingsScreen() {
             <Text style={styles.voucherText}>No voucher added</Text>
           </View>
 
+          {/* Price Section */}
           <View style={styles.priceSection}>
             <View style={styles.rowBetween}>
               <Text style={styles.subLabel}>Sub Total</Text>
@@ -186,7 +205,7 @@ export default function BookingsScreen() {
             </View>
           </View>
 
-          {/* Note text */}
+          {/* Info Note */}
           <Text style={styles.noteInfo}>
             Full payment will be collected directly by the service provider upon completion of the service.
           </Text>
@@ -196,38 +215,36 @@ export default function BookingsScreen() {
             <Text style={styles.acceptTitle}>Accept Booking?</Text>
             <Text style={styles.acceptSubtitle}>Be the first one to accept</Text>
 
-            {/* Slide Button (UI only) */}
-            <View style={styles.sliderContainer}>
+            {/* Slide Button */}
+            <View
+              style={styles.sliderContainer}
+              {...(panResponderRef.current ? panResponderRef.current.panHandlers : {})}
+              onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
+            >
               <View style={styles.sliderTrack}>
                 <Text style={styles.sliderText}>
                   {isAccepted ? "Booking Arrived!" : "Slide to Mark as Arrived"}
                 </Text>
               </View>
               <Animated.View
-                {...panResponder.panHandlers}
                 style={[
                   styles.slider,
-                  {
-                    transform: [{
-                      translateX: pan
-                    }]
-                  }
+                  { transform: [{ translateX: pan }] },
                 ]}
               >
                 <Ionicons name="arrow-forward" size={24} color="#fff" />
               </Animated.View>
             </View>
 
-            {/* Cancel Button (navigate to cancelled screen) */}
+            {/* Cancel Button */}
             <TouchableOpacity
               style={styles.cancelButton}
               onPress={handleCancel}
-              accessibilityLabel="Cancel booking"
-              accessibilityRole="button"
               disabled={isCancelling}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.cancelText}>{isCancelling ? 'Cancelling...' : 'Cancel'}</Text>
+              <Text style={styles.cancelText}>
+                {isCancelling ? "Cancelling..." : "Cancel"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -235,13 +252,13 @@ export default function BookingsScreen() {
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/')} accessibilityLabel="Home">
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push("/")}>
           <Ionicons name="home-outline" size={22} color="#000" />
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="calendar-outline" size={22} color="#00B0B9" />
-          <Text style={[styles.navText, { color: '#00B0B9' }]}>Bookings</Text>
+          <Text style={[styles.navText, { color: "#00B0B9" }]}>Bookings</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="chatbubble-outline" size={22} color="#000" />
@@ -249,8 +266,7 @@ export default function BookingsScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => router.push('/service-provider/my-account')}
-          accessibilityLabel="Profile"
+          onPress={() => router.push("/service-provider/my-account")}
         >
           <Ionicons name="person-outline" size={22} color="#000" />
           <Text style={styles.navText}>Profile</Text>
@@ -261,105 +277,41 @@ export default function BookingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: "#F9F9F9",
-  },
-  container: {
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    marginBottom: 140,
-  },
-  header: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 15,
-  },
-  tabs: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  tabButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderBottomWidth: 2,
-    borderColor: "transparent",
-  },
-  tabActive: {
-    borderColor: "#00B0B9",
-  },
-  tabText: {
-    fontSize: 13,
-    color: "#666",
-  },
-  tabTextActive: {
-    color: "#00B0B9",
-    fontWeight: "600",
-  },
+  page: { flex: 1, backgroundColor: "#F9F9F9" },
+  container: { paddingHorizontal: 16, paddingTop: 20 },
+  header: { fontSize: 22, fontWeight: "700", marginBottom: 10 },
+  tabs: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
+  tabButton: { paddingBottom: 4, borderBottomWidth: 2, borderColor: "transparent" },
+  tabActive: { borderColor: "#00B0B9" },
+  tabText: { fontSize: 13, color: "#666" },
+  tabTextActive: { color: "#00B0B9", fontWeight: "600" },
   card: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    padding: 14,
     shadowColor: "#000",
     shadowOpacity: 0.08,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 2,
     elevation: 2,
   },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  clientName: {
-    fontSize: 14,
-    color: "#000",
-  },
-  serviceTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#000",
-  },
-  serviceSubtitle: {
-    fontSize: 13,
-    color: "#555",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  half: {
-    width: "48%",
-  },
-  label: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 3,
-  },
-  value: {
-    fontSize: 14,
-    color: "#000",
-    lineHeight: 20,
-  },
-  valueBold: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#000",
-  },
-  section: {
-    marginTop: 10,
-  },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  clientName: { fontSize: 13, color: "#000" },
+  serviceTitle: { fontSize: 14, fontWeight: "600", color: "#000" },
+  serviceSubtitle: { fontSize: 12, color: "#555" },
+  row: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
+  half: { width: "48%" },
+  label: { fontSize: 12, color: "#666", marginBottom: 2 },
+  value: { fontSize: 13, color: "#000" },
+  valueBold: { fontSize: 13, fontWeight: "600", color: "#000" },
+  section: { marginTop: 8 },
   textArea: {
     borderWidth: 1,
     borderColor: "#DDD",
     borderRadius: 6,
-    height: 50,
-    marginTop: 4,
-    padding: 8,
+    height: 45,
+    padding: 6,
     textAlignVertical: "top",
+    fontSize: 13,
   },
   voucherBox: {
     flexDirection: "row",
@@ -367,124 +319,62 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#DDD",
     borderRadius: 6,
-    padding: 10,
-    marginTop: 10,
-  },
-  voucherText: {
-    marginLeft: 8,
-    fontSize: 13,
-    color: "#555",
-  },
-  priceSection: {
-    marginTop: 15,
-  },
-  subLabel: {
-    fontSize: 13,
-    color: "#666",
-  },
-  subAmount: {
-    fontSize: 13,
-    color: "#000",
-  },
-  divider: {
-    borderBottomWidth: 1,
-    borderColor: "#EEE",
-    marginVertical: 6,
-  },
-  totalLabel: {
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  totalAmount: {
-    fontWeight: "700",
-    fontSize: 15,
-  },
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  noteInfo: {
-    fontSize: 11,
-    color: "#777",
+    padding: 8,
     marginTop: 8,
-    marginBottom: 12,
-    lineHeight: 16,
   },
-  acceptBox: {
-    borderTopWidth: 1,
-    borderColor: "#DDD",
-    paddingTop: 10,
-  },
-  acceptTitle: {
-    fontWeight: "700",
-    fontSize: 14,
-    color: "#000",
-  },
-  acceptSubtitle: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 8,
-  },
+  voucherText: { marginLeft: 6, fontSize: 12, color: "#555" },
+  priceSection: { marginTop: 12 },
+  subLabel: { fontSize: 12, color: "#666" },
+  subAmount: { fontSize: 12, color: "#000" },
+  divider: { borderBottomWidth: 1, borderColor: "#EEE", marginVertical: 5 },
+  totalLabel: { fontWeight: "700", fontSize: 14 },
+  totalAmount: { fontWeight: "700", fontSize: 14 },
+  rowBetween: { flexDirection: "row", justifyContent: "space-between" },
+  noteInfo: { fontSize: 11, color: "#777", marginTop: 6, marginBottom: 10, lineHeight: 16 },
+  acceptBox: { borderTopWidth: 1, borderColor: "#EEE", paddingTop: 8 },
+  acceptTitle: { fontWeight: "700", fontSize: 13, color: "#000" },
+  acceptSubtitle: { fontSize: 12, color: "#666", marginBottom: 6 },
   sliderContainer: {
-    width: '100%',
-    height: 60,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 30,
-    overflow: 'hidden',
-    position: 'relative',
-    marginVertical: 20,
+    width: "100%",
+    height: 50,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 25,
+    overflow: "hidden",
+    position: "relative",
+    marginVertical: 12,
   },
   slider: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#00B0B9',
-    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#00B0B9",
+    position: "absolute",
     left: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
-  sliderTrack: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sliderText: {
-    color: '#666',
-    fontWeight: '600',
-    fontSize: 16,
-  },
+  sliderTrack: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center" },
+  sliderText: { color: "#666", fontWeight: "600", fontSize: 14 },
   cancelButton: {
     borderWidth: 1,
     borderColor: "#999",
-    borderRadius: 8,
-    paddingVertical: 10,
-    marginTop: 10,
+    borderRadius: 6,
+    paddingVertical: 8,
     alignItems: "center",
   },
-  cancelText: {
-    fontWeight: "600",
-    color: "#333",
-  },
+  cancelText: { fontWeight: "600", color: "#333", fontSize: 13 },
   bottomNav: {
     flexDirection: "row",
     justifyContent: "space-around",
     backgroundColor: "#fff",
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderTopWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#eee",
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
   },
-  navItem: {
-    alignItems: "center",
-  },
-  navText: {
-    fontSize: 12,
-    color: "#000",
-    marginTop: 3,
-  },
+  navItem: { alignItems: "center" },
+  navText: { fontSize: 11, color: "#000", marginTop: 2 },
 });

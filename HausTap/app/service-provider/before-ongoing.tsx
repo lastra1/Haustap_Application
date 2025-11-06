@@ -2,44 +2,45 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function OngoingScreen() {
-  const [selectedTab, setSelectedTab] = useState<string>("Ongoing");
+  const [selectedTab, setSelectedTab] = useState("Ongoing");
+  const [expanded, setExpanded] = useState(false);
 
   const handleTabPress = (tab: string) => {
-    // set local selected tab so UI updates immediately for debugging
     setSelectedTab(tab);
-    // debug log to help verify the handler runs
-    // eslint-disable-next-line no-console
-    console.log('handleTabPress called with tab=', tab);
+    console.log("handleTabPress called with tab=", tab);
 
     try {
-      if (tab === "Pending") {
-        // use replace to avoid duplicate history entries and ensure deterministic navigation
-        router.replace('/service-provider/before-pending');
-        return;
-      }
-      if (tab === "Ongoing") {
-        router.push('/service-provider/before-ongoing');
-        return;
-      }
-      if (tab === "Completed") {
-        router.push('/service-provider/booking-process-completed');
-        return;
-      }
-      if (tab === "Cancelled") {
-        router.push('/service-provider/booking-process-cancelled');
-        return;
-      }
-      if (tab === "Return") {
-        router.push('/service-provider/booking-process-return');
-        return;
+      switch (tab) {
+        case "Pending":
+          router.push("/service-provider/before-pending");
+          break;
+        case "Ongoing":
+          router.push("/service-provider/before-ongoing");
+          break;
+        case "Completed":
+          router.push("/service-provider/booking-process-completed");
+          break;
+        case "Cancelled":
+          router.push("/service-provider/booking-process-cancelled");
+          break;
+        case "Return":
+          router.push("/service-provider/booking-process-return");
+          break;
+        default:
+          break;
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error('Tab navigation failed', e);
+      console.error("Tab navigation failed", e);
     }
   };
 
@@ -48,27 +49,27 @@ export default function OngoingScreen() {
       {/* Header */}
       <Text style={styles.headerTitle}>Bookings</Text>
 
-
       {/* Tabs */}
       <View style={styles.tabs}>
-          {["Pending", "Ongoing", "Completed", "Cancelled", "Return"].map((tab, i) => (
+        {["Pending", "Ongoing", "Completed", "Cancelled", "Return"].map(
+          (tab) => (
             <TouchableOpacity
-              key={i}
+              key={tab}
               onPress={() => handleTabPress(tab)}
               style={[styles.tabButton, tab === selectedTab && styles.tabActive]}
-              accessible
-              accessibilityRole="button"
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Text
-                style={[styles.tabText, tab === selectedTab && styles.tabTextActive]}
+                style={[
+                  styles.tabText,
+                  tab === selectedTab && styles.tabTextActive,
+                ]}
               >
                 {tab}
               </Text>
             </TouchableOpacity>
-          ))}
+          )
+        )}
       </View>
-
 
       {/* Booking Card */}
       <View style={styles.card}>
@@ -78,9 +79,25 @@ export default function OngoingScreen() {
             <Text style={styles.serviceType}>Home Cleaning</Text>
             <Text style={styles.subType}>Bungalow - Basic Cleaning</Text>
           </View>
-          <Ionicons name="chevron-down" size={20} color="#000" />
-        </View>
 
+          {/* Expand/Collapse Button */}
+          <TouchableOpacity
+            onPress={() => setExpanded((prev) => !prev)}
+            style={{ padding: 6 }}
+            accessibilityLabel={
+              expanded ? "Collapse details" : "Expand details"
+            }
+          >
+            <Ionicons
+              name="chevron-down"
+              size={20}
+              color="#000"
+              style={{
+                transform: [{ rotate: expanded ? "180deg" : "0deg" }],
+              }}
+            />
+          </TouchableOpacity>
+        </View>
 
         {/* Date & Time */}
         <View style={styles.row}>
@@ -94,7 +111,6 @@ export default function OngoingScreen() {
           </View>
         </View>
 
-
         {/* Address */}
         <View style={styles.section}>
           <Text style={styles.label}>Address</Text>
@@ -104,39 +120,34 @@ export default function OngoingScreen() {
           </Text>
         </View>
 
+        {/* Expanded Section */}
+        {expanded && (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.label}>Notes:</Text>
+              <TextInput style={styles.notesBox} placeholder=" " />
+            </View>
 
-        {/* Notes */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Notes:</Text>
-          <TextInput style={styles.notesBox} placeholder=" " />
-        </View>
+            <View style={styles.divider} />
 
+            <View style={styles.rowBetween}>
+              <Text style={styles.totalLabel}>TOTAL</Text>
+              <Text style={styles.totalValue}>₱1,000.00</Text>
+            </View>
 
-        <View style={styles.divider} />
-
-
-        {/* Total */}
-        <View style={styles.rowBetween}>
-          <Text style={styles.totalLabel}>TOTAL</Text>
-          <Text style={styles.totalValue}>₱1,000.00</Text>
-        </View>
-
-
-        {/* Slide Button */}
-        <View style={styles.sliderContainer}>
-          <TouchableOpacity style={styles.slideBtn}>
-            <Ionicons name="arrow-forward" size={18} color="#fff" style={styles.slideIcon} />
-            <Text style={styles.slideText}>Slide to mark as completed</Text>
-          </TouchableOpacity>
-        </View>
-
-
-        {/* Cancel Button */}
-        <TouchableOpacity style={styles.cancelBtn}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </TouchableOpacity>
+            <View style={styles.sliderContainer}>
+              <TouchableOpacity
+                style={styles.slideBtn}
+                onPress={() =>
+                  router.push("/service-provider/booking-process-ongoing")
+                }
+              >
+                <Text style={styles.slideText}>Proceed to Completed</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </View>
-
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
@@ -160,7 +171,6 @@ export default function OngoingScreen() {
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -282,24 +292,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     width: "100%",
   },
-  slideIcon: {
-    marginRight: 8,
-  },
   slideText: {
     color: "#fff",
     fontWeight: "600",
     fontSize: 14,
-  },
-  cancelBtn: {
-    borderWidth: 1,
-    borderColor: "#999",
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  cancelText: {
-    color: "#333",
-    fontWeight: "600",
   },
   bottomNav: {
     flexDirection: "row",
@@ -316,7 +312,6 @@ const styles = StyleSheet.create({
   navText: {
     fontSize: 12,
     color: "#000",
-    marginTop: 4
-,
+    marginTop: 4,
   },
 });

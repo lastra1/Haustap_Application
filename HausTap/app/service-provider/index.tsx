@@ -1,9 +1,22 @@
 import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
 
 export default function ServiceProviderDashboard() {
+  const [notes, setNotes] = useState("");
+
   const handleNotificationPress = () => {
     router.push("/service-provider/notification");
   };
@@ -12,75 +25,94 @@ export default function ServiceProviderDashboard() {
     router.push("/service-provider/before-pending");
   };
 
-
-  return (  
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>On Duty</Text>
-          </View>
-          <TouchableOpacity onPress={handleNotificationPress}>
-            <Ionicons name="notifications-outline" size={24} color="#333" />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.welcomeText}>Welcome, Ana Santos</Text>
-        <View style={styles.ratingContainer}>
-          <FontAwesome name="star" size={14} color="#f1c40f" />
-          <Text style={styles.ratingText}>Ratings: 4.8</Text>
-        </View>
-
-        <Text style={styles.subText}>Bookings nearby you</Text>
-
-        {/* Booking Card */}
-        <TouchableOpacity 
-          style={styles.card}
-          onPress={() => {
-            console.log("Navigating to booking queue...");
-            router.replace("/service-provider/booking-queue");
-          }}
-          activeOpacity={0.7}
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Home Cleaning</Text>
-            <MaterialIcons name="keyboard-arrow-down" size={22} color="#333" />
-          </View>
-
-          <Text style={styles.serviceText}>Bungalow - Basic Cleaning</Text>
-
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Date</Text>
-              <Text style={styles.value}>May 21, 2025</Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>On Duty</Text>
             </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Time</Text>
-              <Text style={styles.value}>8:00 AM</Text>
+            <TouchableOpacity onPress={handleNotificationPress}>
+              <Ionicons name="notifications-outline" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.welcomeText}>Welcome, Ana Santos</Text>
+
+          <View style={styles.ratingContainer}>
+            <FontAwesome name="star" size={14} color="#f1c40f" />
+            <Text style={styles.ratingText}>Ratings: 4.8</Text>
+          </View>
+
+          <Text style={styles.subText}>Bookings nearby you</Text>
+
+          {/* Booking Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Home Cleaning</Text>
+              <MaterialIcons
+                name="keyboard-arrow-down"
+                size={22}
+                color="#333"
+              />
             </View>
+
+            <Text style={styles.serviceText}>Bungalow - Basic Cleaning</Text>
+
+            <View style={styles.row}>
+              <View style={styles.col}>
+                <Text style={styles.label}>Date</Text>
+                <Text style={styles.value}>May 21, 2025</Text>
+              </View>
+              <View style={styles.col}>
+                <Text style={styles.label}>Time</Text>
+                <Text style={styles.value}>8:00 AM</Text>
+              </View>
+            </View>
+
+            <Text style={styles.label}>Address</Text>
+            <Text style={styles.value}>
+              B1 L50 Mango St. Phase 1 Saint Joseph Village 10{"\n"}
+              Barangay Langgam, City of San Pedro, Laguna 4023
+            </Text>
+
+            {/* Text box area */}
+            <View style={styles.notesContainer}>
+              <Text style={styles.label}>Notes:</Text>
+              <TextInput
+                style={styles.notesInput}
+                placeholder="Enter notes here..."
+                multiline
+                value={notes}
+                onChangeText={setNotes}
+                blurOnSubmit={true}
+                returnKeyType="done"
+              />
+            </View>
+
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>TOTAL</Text>
+              <Text style={styles.totalAmount}>₱1,000.00</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.openQueueBtn}
+              onPress={() => router.replace("/service-provider/booking-queue")}
+            >
+              <Text style={styles.openQueueText}>Open Booking Queue</Text>
+            </TouchableOpacity>
           </View>
-
-          <Text style={styles.label}>Address</Text>
-          <Text style={styles.value}>
-            B1 L50 Mango St. Phase 1 Saint Joseph Village 10{"\n"}
-            Barangay Langgam, City of San Pedro, Laguna 4023
-          </Text>
-
-          <Text style={styles.label}>Notes:</Text>
-          <TextInput
-            style={styles.notesInput}
-            placeholder="Enter notes here..."
-            multiline
-            editable={false}
-          />
-
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>TOTAL</Text>
-            <Text style={styles.totalAmount}>₱1,000.00</Text>
-          </View>
-        </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </TouchableWithoutFeedback>
 
       {/* Bottom Navbar */}
       <View style={styles.navbar}>
@@ -89,25 +121,28 @@ export default function ServiceProviderDashboard() {
           <Text style={styles.navText}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => router.push("/service-provider/before-pending")}
-        >
+        <TouchableOpacity style={styles.navItem} onPress={handleBookingsPress}>
           <MaterialIcons name="list-alt" size={22} color="#333" />
           <Text style={styles.navText}>Bookings</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/service-provider/chatbox')}>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.push("/service-provider/chatbox")}
+        >
           <Ionicons name="chatbubble-ellipses-outline" size={22} color="#333" />
           <Text style={styles.navText}>Chat</Text>
         </TouchableOpacity>
 
-  <TouchableOpacity style={styles.navItem} onPress={() => router.push("/service-provider/my-account") }>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => router.push("/service-provider/my-account")}
+        >
           <Ionicons name="person-outline" size={22} color="#333" />
           <Text style={styles.navText}>Profile</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -118,7 +153,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 5,
   },
   statusBadge: {
     backgroundColor: "#E3F2FD",
@@ -144,19 +179,24 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: "row", justifyContent: "space-between" },
   cardTitle: { fontSize: 16, fontWeight: "600", color: "#222" },
   serviceText: { color: "#555", marginBottom: 10 },
-  row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
   col: { width: "48%" },
   label: { color: "#666", fontSize: 12, marginBottom: 2 },
   value: { color: "#333", fontSize: 13, marginBottom: 5 },
+  notesContainer: { marginTop: 10, marginBottom: 10 },
   notesInput: {
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
-    height: 60,
+    height: 70,
     padding: 8,
     textAlignVertical: "top",
     fontSize: 13,
-    marginBottom: 10,
+    backgroundColor: "#fff",
   },
   totalRow: {
     flexDirection: "row",
@@ -167,6 +207,14 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontWeight: "700", fontSize: 14, color: "#222" },
   totalAmount: { fontWeight: "700", fontSize: 14, color: "#222" },
+  openQueueBtn: {
+    marginTop: 12,
+    backgroundColor: "#1976D2",
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  openQueueText: { color: "#fff", fontWeight: "600" },
   navbar: {
     position: "absolute",
     bottom: 0,

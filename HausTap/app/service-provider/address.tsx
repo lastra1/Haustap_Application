@@ -1,17 +1,19 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useSegments } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function App() {
   const router = useRouter();
   const segments = useSegments();
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const { addressStore } = require('../../src/services/addressStore');
 
   useEffect(() => {
     console.log('[address] mounted, segments:', segments);
@@ -19,6 +21,13 @@ export default function App() {
       console.log('[address] router keys:', Object.keys(Object.getPrototypeOf(router)).slice(0, 20));
     } catch (err) {
       console.log('[address] router (raw):', router);
+    }
+    // load addresses from store
+    try {
+      const store = require('../../src/services/addressStore').addressStore;
+      setAddresses(store.getAddresses());
+    } catch (e) {
+      console.log('[address] failed to load addressStore', e);
     }
   }, [router, segments]);
 
@@ -30,46 +39,52 @@ export default function App() {
           <MaterialIcons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Addresses</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => { console.log('[address] add pressed'); /* handle add */ }}>
+        <TouchableOpacity style={styles.addButton} onPress={() => { console.log('[address] add pressed'); router.push('/service-provider/add-address'); }} accessibilityLabel="Add Address">
           <Text style={styles.addButtonText}>Add</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        {/* Address Card */}
-        <View style={styles.addressCard}>
-          <View style={styles.addressCardHeader}>
-            <Text style={styles.addressTitle}>Home</Text>
-            <TouchableOpacity style={styles.setDefaultButton}>
-              <Text style={styles.setDefaultButtonText}>Set as Default</Text>
-            </TouchableOpacity>
+        {addresses.length === 0 ? (
+          <View style={{ padding: 20 }}>
+            <Text style={{ color: '#666' }}>No addresses yet. Tap Add to create one.</Text>
           </View>
-          <Text style={styles.addressDetails}>
-            B3 L1 Apple st. Brgy. Laram San Pedro {'\n'}City, Laguna
-          </Text>
-          <View style={styles.addressActions}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => {
-                  console.log('[address] edit pressed — navigating to edit-address?id=home');
-                  router.push('/service-provider/edit-address?id=home');
-                }}
-            >
-              <Text style={[styles.actionButtonText, styles.underlineText]}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => {
-                console.log('[address] delete pressed');
-                // implement delete flow
-              }}
-            >
-              <Text style={[styles.actionButtonText, styles.underlineText]}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* You can add more address cards here if needed */}
+        ) : (
+          addresses.map(addr => (
+            <View key={addr.id} style={styles.addressCard}>
+              <View style={styles.addressCardHeader}>
+                <Text style={styles.addressTitle}>{addr.houseNumber} {addr.street}</Text>
+                <TouchableOpacity
+                  style={styles.setDefaultButton}
+                  onPress={() => console.log('Set as default', addr.id)}
+                >
+                  <Text style={styles.setDefaultButtonText}>Set as Default</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.addressDetails}>
+                {addr.barangayName} {'\n'}{addr.municipal}, {addr.province}
+              </Text>
+              <View style={styles.addressActions}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => router.push(`/service-provider/edit-address?id=${addr.id}`)}
+                >
+                  <Text style={[styles.actionButtonText, styles.underlineText]}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => {
+                    const store = require('../../src/services/addressStore').addressStore;
+                    store.deleteAddress(addr.id);
+                    setAddresses(store.getAddresses());
+                  }}
+                >
+                  <Text style={[styles.actionButtonText, styles.underlineText]}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
       </ScrollView>
     </View>
   );

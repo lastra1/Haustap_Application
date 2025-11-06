@@ -1,14 +1,15 @@
 // SkillsScreen.js
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    LayoutAnimation,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    UIManager,
-    View,
+  LayoutAnimation,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
 } from "react-native";
 
 export default function SkillsScreen({ navigation }: { navigation?: any }) {
@@ -33,8 +34,8 @@ export default function SkillsScreen({ navigation }: { navigation?: any }) {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backBtn}
-          onPress={() => navigation?.goBack?.()}
-          accessibilityLabel="Go back"
+          onPress={() => router.push('/service-provider/my-account')}
+          accessibilityLabel="Go back to My Account"
         >
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>

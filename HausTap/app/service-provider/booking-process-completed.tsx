@@ -1,27 +1,106 @@
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 
 export default function CompletedDetailsScreen() {
+  const [expanded, setExpanded] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [fromDate, setFromDate] = useState<Date>(new Date('2025-10-01'));
+  const [toDate, setToDate] = useState<Date>(new Date('2025-10-31'));
+  const [showFromPicker, setShowFromPicker] = useState(false);
+  const [showToPicker, setShowToPicker] = useState(false);
+
+  // sample bookings (replace with real data source)
+  const sampleBookings = [
+    { id: '1', client: 'Jenn Bornilla', date: '2025-10-05', time: '08:00', service: 'Home Cleaning', subtype: 'Bungalow - Basic Cleaning', address: 'B1 L50 Mango st. Phase 1 Saint Joseph Village 10, Barangay Langgam, City of San Pedro, Laguna 4023' },
+    { id: '2', client: 'Alex Cruz', date: '2025-11-02', time: '10:00', service: 'Deep Cleaning', subtype: 'Condo - Deep Clean', address: 'Unit 12, Some Condo, City' },
+  ];
+  const [bookings, setBookings] = useState(sampleBookings);
+  const [filteredBookings, setFilteredBookings] = useState(sampleBookings);
+
+  const formatDate = (d: Date) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const onChangeFrom = (_event: any, selected?: Date) => {
+    setShowFromPicker(false);
+    if (selected) setFromDate(selected);
+  };
+
+  const onChangeTo = (_event: any, selected?: Date) => {
+    setShowToPicker(false);
+    if (selected) setToDate(selected);
+  };
+
+  const applyFilter = () => {
+    const start = new Date(fromDate);
+    start.setHours(0,0,0,0);
+    const end = new Date(toDate);
+    end.setHours(23,59,59,999);
+    const filtered = bookings.filter(b => {
+      const d = new Date(b.date + 'T00:00:00');
+      return d.getTime() >= start.getTime() && d.getTime() <= end.getTime();
+    });
+    setFilteredBookings(filtered);
+    setShowFilter(false);
+  };
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
+        {/* Header */}
       <View style={styles.headerRow}>
         <Text style={styles.headerTitle}>Bookings</Text>
-        <TouchableOpacity style={styles.filterButton}>
+        <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilter(true)}>
           <Ionicons name="filter-outline" size={18} color="#000" />
           <Text style={styles.filterText}>Filter</Text>
         </TouchableOpacity>
       </View>
+
+      {showFilter && (
+        <View style={styles.filterPanel}>
+          <Text style={styles.filterLabel}>Filter by Date</Text>
+          <View style={styles.dateRow}>
+            <Text style={styles.dateLabel}>From:</Text>
+            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowFromPicker(true)}>
+              <Text style={styles.dateBtnText}>{formatDate(fromDate)}</Text>
+            </TouchableOpacity>
+            {showFromPicker && (
+              <DateTimePicker value={fromDate} mode="date" display="default" onChange={onChangeFrom} />
+            )}
+          </View>
+
+          <View style={styles.dateRow}>
+            <Text style={styles.dateLabel}>Return:</Text>
+            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowToPicker(true)}>
+              <Text style={styles.dateBtnText}>{formatDate(toDate)}</Text>
+            </TouchableOpacity>
+            {showToPicker && (
+              <DateTimePicker value={toDate} mode="date" display="default" onChange={onChangeTo} />
+            )}
+          </View>
+
+          <View style={styles.filterActions}>
+            <TouchableOpacity style={styles.applyBtn} onPress={applyFilter}>
+              <Text style={styles.applyText}>Apply</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.closeFilterBtn} onPress={() => setShowFilter(false)}>
+              <Text style={styles.closeText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
 
       {/* Tabs */}
@@ -48,7 +127,7 @@ export default function CompletedDetailsScreen() {
       </View>
 
 
-      {/* Booking Card */}
+        {/* Booking Card */}
       <View style={styles.card}>
         {/* Header */}
         <View style={styles.cardHeader}>
@@ -57,7 +136,10 @@ export default function CompletedDetailsScreen() {
             <Text style={styles.serviceType}>Home Cleaning</Text>
             <Text style={styles.subType}>Bungalow - Basic Cleaning</Text>
           </View>
-          <Ionicons name="chevron-up" size={20} color="#000" />
+          {/* chevron starts down; when expanded rotates to up */}
+          <TouchableOpacity onPress={() => setExpanded((s) => !s)} style={{ padding: 6 }} accessibilityLabel={expanded ? 'Collapse details' : 'Expand details'}>
+            <Ionicons name="chevron-down" size={20} color="#000" style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }} />
+          </TouchableOpacity>
         </View>
 
 
@@ -83,96 +165,73 @@ export default function CompletedDetailsScreen() {
           </Text>
         </View>
 
+        {/* Expanded details */}
+        {expanded && (
+          <>
+            {/* Selected Package */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Selected:</Text>
+              <Text style={styles.valueBold}>Bungalow 80–150 sqm</Text>
+              <Text style={styles.value}>Basic Cleaning – 1 Cleaner</Text>
+            </View>
 
-        {/* Selected Package */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Selected:</Text>
-          <Text style={styles.valueBold}>Bungalow 80–150 sqm</Text>
-          <Text style={styles.value}>Basic Cleaning – 1 Cleaner</Text>
-        </View>
+            {/* Inclusions */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Inclusions:</Text>
+              <Text style={styles.value}>
+                Living Room: walls, mop, dusting furniture, trash removal,{"\n"}
+                Bedrooms: bed making, sweeping, dusting, trash removal,{"\n"}
+                Hallways: mop & sweep, remove cobwebs,{"\n"}Windows & Mirrors:
+                quick wipe
+              </Text>
+            </View>
 
+            {/* Notes */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Notes:</Text>
+              <TextInput style={styles.notesBox} />
+            </View>
 
-        {/* Inclusions */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Inclusions:</Text>
-          <Text style={styles.value}>
-            Living Room: walls, mop, dusting furniture, trash removal,{"\n"}
-            Bedrooms: bed making, sweeping, dusting, trash removal,{"\n"}
-            Hallways: mop & sweep, remove cobwebs,{"\n"}Windows & Mirrors:
-            quick wipe
-          </Text>
-        </View>
+            {/* Voucher Section */}
+            <View style={styles.voucherBox}>
+              <Ionicons name="pricetag-outline" size={20} color="#000" />
+              <Text style={styles.voucherText}>No voucher added</Text>
+            </View>
 
+            {/* Pricing Section */}
+            <View style={styles.section}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.label}>Sub Total</Text>
+                <Text style={styles.value}>₱1,000.00</Text>
+              </View>
+              <View style={styles.rowBetween}>
+                <Text style={styles.label}>Voucher Discount</Text>
+                <Text style={styles.value}>₱0</Text>
+              </View>
+            </View>
 
-        {/* Notes */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Notes:</Text>
-          <TextInput
-            style={styles.notesBox} />
-        </View>
+            <View style={styles.divider} />
 
+            <View style={styles.rowBetween}>
+              <Text style={styles.totalLabel}>TOTAL</Text>
+              <Text style={styles.totalValue}>₱1,000.00</Text>
+            </View>
 
-        {/* Voucher Section */}
-        <View style={styles.voucherBox}>
-          <Ionicons name="pricetag-outline" size={20} color="#000" />
-          <Text style={styles.voucherText}>No voucher added</Text>
-        </View>
+            <Text style={styles.footerNote}>
+              Full payment will be collected directly by the service provider upon
+              completion of the service.
+            </Text>
 
-
-        {/* Pricing Section */}
-        <View style={styles.section}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.label}>Sub Total</Text>
-            <Text style={styles.value}>₱1,000.00</Text>
-          </View>
-          <View style={styles.rowBetween}>
-            <Text style={styles.label}>Voucher Discount</Text>
-            <Text style={styles.value}>₱0</Text>
-          </View>
-        </View>
-
-
-        <View style={styles.divider} />
-
-
-        <View style={styles.rowBetween}>
-          <Text style={styles.totalLabel}>TOTAL</Text>
-          <Text style={styles.totalValue}>₱1,000.00</Text>
-        </View>
-
-
-        <Text style={styles.footerNote}>
-          Full payment will be collected directly by the service provider upon
-          completion of the service.
-        </Text>
-
-
-        {/* Report Button */}
-        <TouchableOpacity style={styles.reportBtn} onPress={() => router.push('/service-provider/report-page')}>
-          <Text style={styles.reportText}>Report Client</Text>
-        </TouchableOpacity>
+            {/* Report Button */}
+            <TouchableOpacity style={styles.reportBtn} onPress={() => router.push('/service-provider/report-page')}>
+              <Text style={styles.reportText}>Report Client</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="calendar-outline" size={22} color="#00B0B9" />
-          <Text style={[styles.navText, { color: "#00B0B9" }]}>Bookings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="chatbubble-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="person-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Bottom Navigation removed */}
     </ScrollView>
   );
 }
@@ -352,4 +411,23 @@ const styles = StyleSheet.create({
     color: "#000",
     marginTop: 4,
   },
+  /* Filter panel styles */
+  filterPanel: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E6E6E6',
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 12,
+  },
+  filterLabel: { fontWeight: '700', marginBottom: 8 },
+  dateRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  dateLabel: { width: 70, color: '#555' },
+  dateBtn: { borderWidth: 1, borderColor: '#DDD', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 6 },
+  dateBtnText: { color: '#000' },
+  filterActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 },
+  applyBtn: { backgroundColor: '#00B0B9', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 6, marginRight: 8 },
+  applyText: { color: '#fff', fontWeight: '600' },
+  closeFilterBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 6, borderWidth: 1, borderColor: '#CCC' },
+  closeText: { color: '#333' },
 });

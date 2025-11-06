@@ -134,22 +134,34 @@ export default function App() {
         </TouchableOpacity>
 
         {/* My Vouchers */}
-        <View style={styles.menuRow}>
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => router.push('/service-provider/my-voucher')}
+          accessibilityLabel="My Vouchers"
+        >
           <MaterialCommunityIcons name="ticket-percent-outline" size={20} color="black" />
           <Text style={styles.menuTitle}>My Vouchers</Text>
-        </View>
+        </TouchableOpacity>
 
         {/* My Subscription */}
-        <View style={styles.menuRow}>
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => router.push('/service-provider/my-subscription')}
+          accessibilityLabel="My Subscription"
+        >
           <MaterialCommunityIcons name="wallet-outline" size={20} color="black" />
           <Text style={styles.menuTitle}>My Subscription</Text>
-        </View>
+        </TouchableOpacity>
 
         {/* Connect Haustap */}
-        <View style={styles.menuRow}>
+        <TouchableOpacity
+          style={styles.menuRow}
+          onPress={() => router.push('/service-provider/connect-haustap')}
+          accessibilityLabel="Connect Haustap"
+        >
           <MaterialCommunityIcons name="email-outline" size={20} color="black" />
           <Text style={styles.menuTitle}>Connect Haustap</Text>
-        </View>
+        </TouchableOpacity>
 
         {/* Privacy Settings */}
         <View style={styles.menuGroup}>
@@ -168,9 +180,15 @@ export default function App() {
           </TouchableOpacity>
           {showPrivacy && (
             <View>
-              <Text style={styles.subItem}>Terms and Conditions</Text>
-              <Text style={styles.subItem}>Privacy Policy</Text>
-              <Text style={styles.subItem}>Account Deletion</Text>
+              <TouchableOpacity onPress={() => router.push('/service-provider/terms-condition')} accessibilityLabel="Terms and Conditions">
+                <Text style={styles.subItem}>Terms and Conditions</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/service-provider/privacy-policy')} accessibilityLabel="Privacy Policy">
+                <Text style={styles.subItem}>Privacy Policy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/service-provider/account-deletion')} accessibilityLabel="Account Deletion">
+                <Text style={styles.subItem}>Account Deletion</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -192,8 +210,12 @@ export default function App() {
           </TouchableOpacity>
           {showSettings && (
             <View>
-              <Text style={styles.subItem}>Language</Text>
-              <Text style={styles.subItem}>Sound</Text>
+              <TouchableOpacity onPress={() => router.push('/service-provider/language-settings')} accessibilityLabel="Language Settings">
+                <Text style={styles.subItem}>Language</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/service-provider/sound-settings')} accessibilityLabel="Sound Settings">
+                <Text style={styles.subItem}>Sound</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -205,11 +227,11 @@ export default function App() {
         </View>
 
         {/* About Us */}
-        <View style={styles.menuRow}>
+        <TouchableOpacity style={styles.menuRow} onPress={() => router.push('/service-provider/about-us')} accessibilityLabel="About Us">
           <AntDesign name="info-circle" size={20} color="black" />
           <Text style={styles.menuTitle}>About us</Text>
           <Text style={styles.version}>v1</Text>
-        </View>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Logout Button */}
