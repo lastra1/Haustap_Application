@@ -9,10 +9,12 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
+import { useAuth } from '../../context/AuthContext';
 
 export default function MyAccount() {
   const router = useRouter();
   const [expanded, setExpanded] = useState<string | null>(null);
+  const { logout } = useAuth();
 
   const toggleExpand = (section: string) => {
     setExpanded(expanded === section ? null : section);
@@ -155,7 +157,18 @@ export default function MyAccount() {
       </View>
 
       {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutBtn}>
+      <TouchableOpacity
+        style={styles.logoutBtn}
+        onPress={async () => {
+          try {
+            await logout();
+            router.replace('/Log-in');
+          } catch (e) {
+            // fallback: still navigate
+            router.replace('/Log-in');
+          }
+        }}
+      >
         <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
     </ScrollView>

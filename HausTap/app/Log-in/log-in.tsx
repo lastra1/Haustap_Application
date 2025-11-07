@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+    Alert,
     Image,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const { login, signup } = useAuth();
 
   const handleLogin = async () => {
     // Reset error state
@@ -34,31 +36,22 @@ export default function Login() {
     }
 
     try {
-      // In a real app, you would validate against your backend
-      // This is just a demo implementation
-      const storedUser = await AsyncStorage.getItem('user_credentials');
-      const user = storedUser ? JSON.parse(storedUser) : null;
-
-      if (user && user.email === email && user.password === password) {
-        // Successful login
-        await AsyncStorage.setItem('isLoggedIn', 'true');
-        router.replace('/');
-      } else {
-        setError('Invalid email or password');
-      }
-    } catch (error) {
-      setError('An error occurred. Please try again.');
+      const u = await login(email.trim(), password);
+      // Navigate based on role
+      if (u.role === 'client') router.replace('/client-side');
+      else router.replace('/service-provider');
+    } catch (err: any) {
+      setError(err?.message || 'Invalid email or password');
     }
   };
 
   const handleForgotPassword = () => {
-    // Navigate to forgot password screen
     Alert.alert('Reset Password', 'Please contact support to reset your password.');
   };
 
-  const handleSignUp = () => {
-    // Navigate to sign up screen
-    router.push('/partner-onboarding-success');
+  const handleSignUp = async () => {
+    // Open the Sign Up form screen instead of auto-creating an account
+    router.push('/signup');
   };
 
   return (
