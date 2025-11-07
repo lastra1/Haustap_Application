@@ -29,7 +29,7 @@ export default function PartnerOnboardingSuccess() {
         </Text>
         <Text style={styles.footer}>We're excited to have you on board and grow with us!</Text>
       </View>
-      <TouchableOpacity style={styles.button} onPress={() => router.replace('/')}> {/* Replace with your home route */}
+      <TouchableOpacity style={styles.button} onPress={() => router.replace('/client-side/client-profile')}> {/* Route back to My Account */}
         <Text style={styles.buttonText}>Done</Text>
       </TouchableOpacity>
     </SafeAreaView>

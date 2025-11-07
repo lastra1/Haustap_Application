@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import {
     ScrollView,
     StyleSheet,
+    Switch,
     Text,
     TouchableOpacity,
     View
@@ -15,6 +16,31 @@ export default function MyAccount() {
   const router = useRouter();
   const [expanded, setExpanded] = useState<string | null>(null);
   const { logout } = useAuth();
+  const { user, setPartnerStatus, setMode, mode } = useAuth();
+
+  const isPartnerMode = mode === 'provider';
+
+  const onTogglePartner = async (value: boolean) => {
+    // if application is pending, do nothing
+    if (user?.isApplicationPending) return;
+
+    if (value) {
+      // turning ON
+      if (!user?.isHausTapPartner) {
+        // Not yet a partner - go to application form
+        router.push('/client-profile/application-form');
+        return;
+      }
+      // already a verified partner - switch to provider mode
+      await setMode('provider');
+      await setPartnerStatus(true);
+      router.replace('/service-provider');
+    } else {
+      // turning OFF - switch back to client mode
+      await setMode('client');
+      router.replace('/client-side');
+    }
+  };
 
   const toggleExpand = (section: string) => {
     setExpanded(expanded === section ? null : section);
@@ -39,6 +65,15 @@ export default function MyAccount() {
         <TouchableOpacity>
           <Text style={styles.editProfileText}>Edit Profile</Text>
         </TouchableOpacity>
+        {/* Partner toggle */}
+        <View style={[styles.partnerRow, user?.isApplicationPending ? { opacity: 0.6 } : {}]}>
+          <Text style={styles.partnerLabel}>{user?.isApplicationPending ? 'Pending HausTap Partner' : 'HausTap Partner'}</Text>
+          <Switch
+            value={isPartnerMode}
+            onValueChange={onTogglePartner}
+            disabled={!!user?.isApplicationPending}
+          />
+        </View>
       </View>
 
       {/* Account Sections */}
@@ -240,6 +275,22 @@ const styles = StyleSheet.create({
   },
   dropdownButton: {
     paddingVertical: 8,
+  },
+  partnerRow: {
+    marginTop: 12,
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  partnerLabel: {
+    fontSize: 16,
+    fontWeight: '500',
   },
   backText: {
     color: '#3DC1C6',

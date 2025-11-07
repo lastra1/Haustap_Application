@@ -132,23 +132,16 @@ export default function ScheduleBooking() {
         <TouchableOpacity
           style={[
             styles.scheduleBtn,
-            (!selectedDate || isFullyBooked || !selectedTime) &&
-              styles.scheduleBtnDisabled,
+            // cancel button always enabled (just navigate back)
           ]}
-          disabled={!selectedDate || isFullyBooked || !selectedTime}
-          onPress={() =>
-            router.push({
-              pathname: "/client-side/booking-status",
-              params: { date: selectedDate, time: selectedTime },
-            } as any)
-          }
+          onPress={() => router.back()}
         >
-          <Text style={styles.scheduleText}>Schedule</Text>
+          <Text style={styles.scheduleText}>Cancel</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.nextBtn, { opacity: selectedDate ? 1 : 0.5 }]}
-          disabled={!selectedDate}
+          style={[styles.nextBtn, { opacity: selectedDate && selectedTime && !isFullyBooked ? 1 : 0.5 }]}
+          disabled={!selectedDate || !selectedTime || isFullyBooked}
           onPress={() =>
             router.push({
               pathname: "/client-side/booking-process/booking-overview",

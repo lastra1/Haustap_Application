@@ -3,12 +3,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { accountsStore } from '../src/services/accountsStore';
 import { authService } from '../src/services/auth.service';
 import { flowStore } from '../src/services/flowStore';
+import { useAuth } from './context/AuthContext';
 
 export default function PartnerVerification() {
   const { services, email } = useLocalSearchParams();
   const router = useRouter();
+  const { setApplicationPending, user } = useAuth();
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
@@ -111,7 +114,25 @@ export default function PartnerVerification() {
           [
             {
               text: 'OK',
-              onPress: () => {
+                onPress: async () => {
+                try {
+                  // mark the account as having a pending application
+                  const target = decodedEmail || flowStore.getEmail();
+                  if (target) {
+                    await accountsStore.updateAccount(target, { isApplicationPending: true });
+                    // if the currently-authenticated user matches, update in-memory auth state as well
+                    try {
+                      if (user && user.email === target && setApplicationPending) {
+                        await setApplicationPending(true);
+                      }
+                    } catch (e) {
+                      // ignore
+                    }
+                  }
+                  // if the current app has an authenticated user matching this email, update auth state immediately
+                } catch (e) {
+                  // ignore update failure
+                }
                 router.replace('/partner-onboarding-success');
               }
             }

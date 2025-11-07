@@ -2,14 +2,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 type Role = 'client' | 'provider';
-type User = { email: string; role: Role } | null;
+type User = { email: string; role: Role; isHausTapPartner?: boolean; isApplicationPending?: boolean } | null;
 
 type AuthContextValue = {
   user: User;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  signup: (email: string, password: string) => Promise<User>;
+  signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  setPartnerStatus: (value: boolean) => Promise<void>;
+  setApplicationPending: (value: boolean) => Promise<void>;
+  setMode: (mode: Role) => Promise<void>;
+  mode: Role;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -19,13 +23,16 @@ const STORAGE_KEY = 'HT_user';
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User>(null);
   const [loading, setLoading] = useState(true);
+  const [mode, setModeState] = useState<Role>('client');
 
   useEffect(() => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
-          setUser(JSON.parse(raw));
+          const parsed = JSON.parse(raw);
+          setUser(parsed.user || null);
+          setModeState(parsed.mode || 'client');
         }
       } catch (e) {
         // ignore
@@ -35,53 +42,101 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     })();
   }, []);
 
-  const persist = async (u: User) => {
-    if (u) await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+  const persist = async (u: User, m: Role) => {
+    if (u) await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ user: u, mode: m }));
     else await AsyncStorage.removeItem(STORAGE_KEY);
   };
 
   const login = async (email: string, password: string) => {
-    // Mock credentials
-    const client = { email: 'haustapUser@gmail.com', password: '123haustap' };
-    const provider = { email: 'haustapProvider@gmail.com', password: '123haustap' };
-
     // Simulate async auth
     await new Promise((r) => setTimeout(r, 300));
+
+    // Check created accounts first
+    try {
+      const { accountsStore } = require('../../src/services/accountsStore');
+      const acc = accountsStore.getAccountByEmail(email);
+      if (acc && acc.password === password) {
+        const u = { email, role: 'client' as Role, isHausTapPartner: !!acc.isHausTapPartner, isApplicationPending: !!acc.isApplicationPending };
+        setUser(u);
+        await persist(u, 'client');
+        setModeState('client');
+        return u;
+      }
+    } catch (e) {
+      // ignore loading errors
+    }
+
+    // Fallback mocked credentials
+    const client = { email: 'haustapUser@gmail.com', password: '123haustap' };
+    const provider = { email: 'haustapProvider@gmail.com', password: '123haustap' };
 
     if (email === client.email && password === client.password) {
       const u = { email, role: 'client' as Role };
       setUser(u);
-      await persist(u);
+      await persist(u, 'client');
+      setModeState('client');
       return u;
     }
 
     if (email === provider.email && password === provider.password) {
       const u = { email, role: 'provider' as Role };
       setUser(u);
-      await persist(u);
+      await persist(u, 'provider');
+      setModeState('provider');
       return u;
     }
 
-    // Not a mocked account
+    // Not a valid account
     throw new Error('Invalid email or password');
   };
 
   const signup = async (email: string, password: string) => {
-    // For now, simulate creating a client account and signing in
-    await new Promise((r) => setTimeout(r, 300));
-    const u = { email, role: 'client' as Role };
-    setUser(u);
-    await persist(u);
-    return u;
+    // Persist a new account but do NOT auto-login
+  const { accountsStore } = require('../../src/services/accountsStore');
+  await accountsStore.addAccount({ email, password, isHausTapPartner: false });
+    return;
   };
 
   const logout = async () => {
     setUser(null);
-    await persist(null);
+    setModeState('client');
+    await persist(null, 'client');
+  };
+
+  const setPartnerStatus = async (value: boolean) => {
+    if (!user) return;
+    const updated = { ...user, isHausTapPartner: value };
+    setUser(updated);
+    // update accounts store if account exists
+    try {
+  const { accountsStore } = require('../../src/services/accountsStore');
+  await accountsStore.updateAccount(user.email, { isHausTapPartner: value });
+    } catch (e) {
+      // ignore
+    }
+    await persist(updated, mode);
+  };
+
+  const setApplicationPending = async (value: boolean) => {
+    if (!user) return;
+    const updated = { ...user, isApplicationPending: value };
+    setUser(updated);
+    try {
+      const { accountsStore } = require('../../src/services/accountsStore');
+      await accountsStore.updateAccount(user.email, { isApplicationPending: value });
+    } catch (e) {
+      // ignore
+    }
+    await persist(updated, mode);
+  };
+
+  const setMode = async (m: Role) => {
+    setModeState(m);
+    await persist(user, m);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, setPartnerStatus, setApplicationPending, setMode, mode }}>
       {children}
     </AuthContext.Provider>
   );

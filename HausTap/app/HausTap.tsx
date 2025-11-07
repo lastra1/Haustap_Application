@@ -2,20 +2,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import React, { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
+import { accountsStore } from '../src/services/accountsStore';
 
 export default function HausTap() {
   const router = useRouter();
@@ -164,9 +165,19 @@ const generateNewOtp = async () => {
 
     // OTP is valid
     setOtpError("");
-    // Here you would proceed with account creation
-    alert("Email verified successfully!");
-    setShowEmailVerification(false);
+    // Create account in local accounts store (do NOT auto-login)
+    (async () => {
+      try {
+        await accountsStore.addAccount({ email, password, isHausTapPartner: false });
+        alert('Email verified and account created. Please sign in using your credentials.');
+      } catch (e) {
+        console.error('Failed to save account', e);
+        alert('Account created but failed to persist locally.');
+      } finally {
+        setShowEmailVerification(false);
+        try { router.push('/Log-in'); } catch (_) {}
+      }
+    })();
   };
 
   const handleSignUp = async () => {
@@ -357,13 +368,6 @@ const generateNewOtp = async () => {
             </Text>
 
             <View style={styles.line} />
-
-            <TouchableOpacity 
-              style={styles.buttonAlt}
-              onPress={() => router.push('/partner')}
-            >
-              <Text style={styles.buttonText}>Become a HausTap Partner</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
