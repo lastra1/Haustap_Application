@@ -1,7 +1,15 @@
+
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { applianceRepairCategories } from "./data/applianceRepair";
+import { acCleaningCategories, acDeepCleaningCategories, homeCleaningCategories } from "./data/cleaning";
+import { electricalCategories } from "./data/electrical";
+import { handymanCategories } from "./data/handyman";
+import { pestControlCategories } from "./data/pestControl";
+import { plumbingCategories } from "./data/plumbing";
+import { Category } from "./data/types";
 
 export default function BookingScreen() {
   const router = useRouter();
@@ -38,80 +46,6 @@ export default function BookingScreen() {
     }
   }, []); // Empty dependency array so it only runs once on mount
 
-  // HOME CLEANING CATEGORIES
-  const homeCleaningCategories = [
-    { title: "Bungalow", size: "(80–150 sqm)", desc: "A single-story house with wider living spaces, ideal for\nfamilies." },
-    { title: "Condominium Studio / 1BR", size: "Studio / 1BR (25–60 sqm)", desc: "A compact unit with one bedroom or open layout, ideal\nfor singles or couples." },
-    { title: "Condominium 2BR", size: "(60–100 sqm)", desc: "A medium-sized condo unit with two bedrooms,\nsuited for small families." },
-    { title: "Condominium Penthouse", size: "~150 sqm", desc: "A large, luxury unit at the top floor with spacious\nrooms and premium finishes." },
-    { title: "Duplex", size: "Larger (150–200 sqm)", desc: "A bigger duplex unit with wider rooms and more\nfunctional areas for families." },
-    { title: "Container House Single", size: "(10–20 sqm)", desc: "A compact home built from one container, often\nstudio-type." },
-    { title: "Container House Multiple", size: "(30–50 sqm)", desc: "A larger house made from combined containers\nwith more functional spaces." },
-    { title: "Stilt House Small", size: "(30–50 sqm)", desc: "A raised house on stilts, typically simple and\ncompact." },
-    { title: "Stilt House Large", size: "(80–120 sqm)", desc: "A bigger elevated house with wider living and\nbedroom areas." },
-    { title: "Mansion Smaller", size: "(300–500 sqm)", desc: "A large, multi-room residence with luxury\nfeatures and wide spaces." },
-    { title: "Mansion Larger", size: "(600–1000 sqm)", desc: "A very spacious, high-end residence with\nmultiple floors and amenities." },
-    { title: "Villa Smaller", size: "(100–250 sqm)", desc: "A private, medium-sized luxury house often with\na garden or outdoor space." },
-    { title: "Villa Larger", size: "(300–1000 sqm)", desc: "A grand villa with expansive living areas, outdoor\nfeatures, and multiple rooms." },
-  ];
-
-  // AC CLEANING CATEGORIES
-  const acCleaningCategories = [
-    {
-      title: "Window Type (0.5 HP – 1.5 HP)",
-      price: "₱500/unit",
-      desc: "Inclusions:\nUnit inspection before cleaning, Cleaning of front cover and air filter, Vacuum and wash of evaporator coil (indoor unit), Cleaning of blower and drain pan, Flushing of drain line to remove clogs, Wiping of outer casing, Test run after cleaning.",
-    },
-    {
-      title: "Window Type (2.0 HP – 2.5 HP)",
-      price: "₱700/unit",
-      desc: "Inclusions:\nUnit inspection before cleaning, Cleaning of front cover and air filter, Vacuum and wash of evaporator coil (indoor unit), Cleaning of blower and drain pan, Flushing of drain line to remove clogs, Wiping of outer casing, Test run after cleaning.",
-    },
-    {
-      title: "Split Type (0.5 HP – 1.5 HP)",
-      price: "₱500/unit",
-      desc: "Inclusions:\nUnit inspection before cleaning, Cleaning of front cover and air filter, Vacuum and wash of evaporator coil (indoor unit), Cleaning of blower and drain pan, Flushing of drain line to remove clogs, Wiping of outer casing, Test run after cleaning.",
-    },
-    {
-      title: "Split Type (2.0 HP – 2.5 HP)",
-      price: "₱700/unit",
-      desc: "Inclusions:\nUnit inspection before cleaning, Cleaning of front cover and air filter, Vacuum and wash of evaporator coil (indoor unit), Cleaning of blower and drain pan, Flushing of drain line to remove clogs, Wiping of outer casing, Test run after cleaning.",
-    },
-    {
-      title: "Split Type (3.0 HP and above)",
-      price: "₱1,000/unit",
-      desc: "Inclusions:\nUnit inspection before cleaning, Cleaning of front cover and air filter, Vacuum and wash of evaporator coil (indoor unit), Cleaning of blower and drain pan, Flushing of drain line to remove clogs, Wiping of outer casing, Test run after cleaning.",
-    },
-  ];
-
-  // AC DEEP CLEANING (CHEMICAL CLEANING)
-  const acDeepCleaningCategories = [
-    {
-      title: "Window Type (0.5 HP – 1.5 HP)",
-      price: "₱1,500/unit",
-      desc: "Inclusions:\nFull disassembly of unit, Chemical wash of evaporator coil & condenser, Cleaning of blower wheel, fan, and drain pan, Flushing of drain line & removal of heavy dirt/molds, Casing and filter washing, Thorough drying & reassembly, Test run and performance check.",
-    },
-    {
-      title: "Window Type (2.0 HP – 2.5 HP)",
-      price: "₱1,800/unit",
-      desc: "Inclusions:\nFull disassembly of unit, Chemical wash of evaporator coil & condenser, Cleaning of blower wheel, fan, and drain pan, Flushing of drain line & removal of heavy dirt/molds, Casing and filter washing, Thorough drying & reassembly, Test run and performance check.",
-    },
-    {
-      title: "Split Type (0.5 HP – 1.5 HP)",
-      price: "₱1,500/unit",
-      desc: "Inclusions:\nFull disassembly of unit, Chemical wash of evaporator coil & condenser, Cleaning of blower wheel, fan, and drain pan, Flushing of drain line & removal of heavy dirt/molds, Casing and filter washing, Thorough drying & reassembly, Test run and performance check.",
-    },
-    {
-      title: "Split Type (2.0 HP – 2.5 HP)",
-      price: "₱1,800/unit",
-      desc: "Inclusions:\nFull disassembly of unit, Chemical wash of evaporator coil & condenser, Cleaning of blower wheel, fan, and drain pan, Flushing of drain line & removal of heavy dirt/molds, Casing and filter washing, Thorough drying & reassembly, Test run and performance check.",
-    },
-    {
-      title: "Split Type (3.0 HP and above)",
-      price: "₱2,000/unit",
-      desc: "Inclusions:\nFull disassembly of unit, Chemical wash of evaporator coil & condenser, Cleaning of blower wheel, fan, and drain pan, Flushing of drain line & removal of heavy dirt/molds, Casing and filter washing, Thorough drying & reassembly, Test run and performance check.",
-    },
-  ];
 
   // Determine nav items and categories based on selectedService.
   const isIndoor = selectedService === "Indoor Services";
@@ -124,100 +58,19 @@ export default function BookingScreen() {
       ];
 
   // Select category list
-  let categories: Array<any> = [];
+  let categories: Category[] = [];
   if (isIndoor) {
     if (selectedSubservice === "Handyman") {
-      categories = [
-        { title: "Inspection Fee", price: "₱300", desc: "Applies if service did not proceed\nInclusions:\nOn-site visit by a handyman, Assessment of repair/service needs, Basic recommendation, No actual repair or installation included" },
-        { title: "Furniture Assembly - Small Items", price: "₱350 per unit", desc: "Inclusions:\nChair, stool, side table, shelves , Complete furniture assembly, Tightening of screws, bolts, and fittings, Alignment and stability check, Minor adjustments for proper function" },
-        { title: "Furniture Assembly - Medium Items", price: "₱500 per unit", desc: "Inclusions:\nOffice table, study table, small cabinet, Complete furniture assembly, Tightening of screws, bolts, and fittings, Alignment and stability check, Minor adjustments for proper function" },
-        { title: "Furniture Assembly - Large Items", price: "₱800 per unit", desc: "Inclusions:\nBed frame, wardrobe, big cabinet, Complete furniture assembly, Tightening of screws, bolts, and fittings, Alignment and stability check, Minor adjustments for proper function" },
-        { title: "Door knob / Lock replacement", price: "₱400 per unit", desc: "Inclusions:\nRemoval of old hardware, Installation/replacement of knob, lock, or hinge, Proper alignment and door function test, Lubrication of moving parts (if needed)" },
-        { title: "Door hinge replacement", price: "₱300 per unit", desc: "Inclusions:\nRemoval of old hardware, Installation/replacement of knob, lock, or hinge, Proper alignment and door function test, Lubrication of moving parts (if needed)" },
-        { title: "Sliding door / Closet adjustment", price: "₱350 per unit", desc: "Inclusions:\nRemoval of old hardware, Installation/replacement of knob, lock, or hinge, Proper alignment and door function test, Lubrication of moving parts (if needed)" },
-        { title: "Loose chair / Desk repair", price: "₱400 per unit", desc: "Inclusions:\nRe-tightening of screws, bolts, or hinges, Realignment of panels, drawers, or doors, Minor sanding, patching, or reinforcement, Functionality check after repair" },
-        { title: "Cabinet alignment / Fix", price: "₱400", desc: "Inclusions:\nRe-tightening of screws, bolts, or hinges, Realignment of panels, drawers, or doors, Minor sanding, patching, or reinforcement, Functionality check after repair" },
-        { title: "Minor wooden repairs", price: "₱400 per unit", desc: "Inclusions:\nRe-tightening of screws, bolts, or hinges, Realignment of panels, drawers, or doors, Minor sanding, patching, or reinforcement, Functionality check after repair" },
-        { title: "Curtain rod / Blinds installations", price: "₱300 per unit", desc: "Inclusions:\nMeasuring and marking proper placement, Drilling and secure mounting with screws/anchors, Level and alignment check, Clean-up of minor dust/debris after work" },
-        { title: "Mirror installation", price: "₱300", desc: "Inclusions:\nMeasuring and marking proper placement, Drilling and secure mounting with screws/anchors, Level and alignment check, Clean-up of minor dust/debris after work" },
-      ];
+      categories = handymanCategories;
     } else if (selectedSubservice === "Plumbing") {
-      categories = [
-        { title: "Inspection Fee", price: "₱300", desc: "Applies if service did not proceed\nInclusions:\nOn-site visit by a plumber, Assessment of repair/service needs, Basic recommendation, No actual repair or installation included" },
-        { title: "Faucet leak repair", price: "₱350", desc: "Inclusions:\nDiagnosis of faucet leak (washer, cartridge, or seal issue), Minor tightening / washer replacement, Leak test after repair, Replacement faucet not included" },
-        { title: "Pipe leak repair", price: "₱600", desc: "Inclusions:\nLocate and assess pipe leak, Apply sealing, patch, or minor joint repair, Pressure test after repair, Replacement pipe parts not included" },
-        { title: "Clogged sink / Drain cleaning", price: "₱500", desc: "Inclusions:\nCheck and remove debris / blockage, Use of plumber's snake / pump if needed, Water flow test after clearing" },
-        { title: "Toilet bowl clog removal", price: "₱650", desc: "Assessment of blockage, Manual unclogging or use of auger/pump, Flush test to ensure flow" },
-        { title: "Toilet flash repair/ replacement", price: "₱700", desc: "Inclusions:\nCheck flush mechanism (valve, handle, tank parts), Minor adjustment or replacement of faulty parts, Functionality test after repair, Replacement parts not included" },
-        { title: "Shower head installation / replacement", price: "₱400", desc: "Inclusions:\nRemoval of old shower head (if any), Installation of new shower head, Water pressure test to ensure function" },
-        { title: "Water heater installation - Basic", price: "₱1,500", desc: "Inclusions:\nMounting of heater unit, Basic plumbing connection to water line, Leak and functionality check, Electrical wiring not included (separate fee)" },
-        { title: "Pipe installation - New connection", price: "₱200", desc: "Inclusions:\nInstallation of short pipe line (sink, toilet, faucet connection), Sealing of joints to prevent leaks, Water pressure test" },
-        { title: "Siphon / Trap replacement", price: "₱500", desc: "Inclusions:\nRemoval of old siphon or trap (sink or toilet), Installation of new part, Leak test after replacement" },
-      ];
+      categories = plumbingCategories;
     } else if (selectedSubservice === "Electrical") {
-      categories = [
-        { title: "Inspection Fee", price: "₱300", desc: "Applies if service did not proceed\nInclusions:\nOn-site visit by electrician, Assessment of wiring / electrical issue, Basic recommendations / cost estimate, Repair not included" },
-        { title: "Outlet installation / repair", price: "₱400 per outlet", desc: "Inclusions:\nMounting of new outlet or repair of damaged one, Electrical connection and safety check, Test using appliance or tester" },
-        { title: "Light Switch repair", price: "₱400 per repair", desc: "Inclusions:\nRemoval of damaged socket (if any), Installation of new socket, Connection to existing wiring, Functionality and safety test" },
-        { title: "Light installation", price: "₱500 per Clogged", desc: "Inclusions:\nSwitch installation, Installation of bulb socket / fixture, Power-on functionality Test" },
-        { title: "Light switch replacement", price: "₱350 per replacement", desc: "Inclusions:\nCheck faulty switch, Replace or repair as needed, Test switch and connected light" },
-        { title: "Circuit breaker installation / replacement", price: "₱500 per install/ replacement", desc: "Inclusions:\nRemoval of old breaker (if applicable), Installation of new breaker, Proper wiring connection, Functionality and safety test" },
-        { title: "Ceiling fan installation", price: "₱500 per install", desc: "Inclusions:\nMount fan on ceiling, Proper electrical connection, Balance and functionality test" },
-      ];
+      categories = electricalCategories;
     } else if (selectedSubservice === "Pest Control") {
-      categories = [
-        // Termites Section
-        { title: "TERMITES", price: "", desc: "Termite Control Services" },
-        { title: "Termite Treatment: Floor Area: <50 sqm", price: "₱6,450", desc: "Inclusions:\nSite inspection, one-spot treatment of affected areas, wood & cement drenching, and mound destruction." },
-        { title: "Termite Treatment: Floor Area: 51-100 sqm", price: "₱8,950", desc: "Inclusions:\nSite inspection, one-spot treatment of affected areas, wood & cement drenching, and mound destruction." },
-        { title: "Termite Treatment: Floor Area: 101-150 sqm", price: "₱12,450", desc: "Inclusions:\nSite inspection, one-spot treatment of affected areas, wood & cement drenching, and mound destruction." },
-        { title: "Termite Treatment: Floor Area: 151-200 sqm", price: "₱15,450", desc: "Inclusions:\nSite inspection, one-spot treatment of affected areas, wood & cement drenching, and mound destruction." },
-
-        // Ants Section
-        { title: "ANTS", price: "", desc: "Ant Control Services" },
-        { title: "Ant Treatment: Floor Area: <50 sqm", price: "₱1,899", desc: "Inclusions:\nApplication of baits & residual spray, crack & crevice treatment, prevention tips." },
-        { title: "Ant Treatment: Floor Area: 51-100 sqm", price: "₱2,899", desc: "Inclusions:\nApplication of baits & residual spray, crack & crevice treatment, prevention tips." },
-        { title: "Ant Treatment: Floor Area: 101-150 sqm", price: "₱3,899", desc: "Inclusions:\nApplication of baits & residual spray, crack & crevice treatment, prevention tips." },
-        { title: "Ant Treatment: Floor Area: 151-200 sqm", price: "₱4,899", desc: "Inclusions:\nApplication of baits & residual spray, crack & crevice treatment, prevention tips." },
-
-        // Cockroaches Section
-        { title: "COCKROACHES", price: "", desc: "Cockroach Control Services" },
-        { title: "Cockroaches Treatment: Floor Area: <50 sqm", price: "₱1,899", desc: "Inclusions:\nSpraying for kitchens, bathrooms, and food areas, bait application, and prevention tips." },
-        { title: "Cockroaches Treatment: Floor Area: 51-100 sqm", price: "₱2,899", desc: "Inclusions:\nSpraying for kitchens, bathrooms, and food areas, bait application, and prevention tips." },
-        { title: "Cockroaches Treatment: Floor Area: 101-150 sqm", price: "₱3,899", desc: "Inclusions:\nSpraying for kitchens, bathrooms, and food areas, bait application, and prevention tips." },
-        { title: "Cockroaches Treatment: Floor Area: 151-200 sqm", price: "₱4,899", desc: "Inclusions:\nSpraying for kitchens, bathrooms, and food areas, bait application, and prevention tips." },
-
-        // Bed Bugs Section
-        { title: "BED BUGS", price: "", desc: "Bed Bug Control Services" },
-        { title: "Bed Bugs Treatment: Floor Area: <50 sqm", price: "₱2,899", desc: "Inclusions:\nHeat/steam treatment, residual spray, vacuuming, and prevention tips." },
-        { title: "Bed Bugs Treatment: Floor Area: 51-100 sqm", price: "₱3,899", desc: "Inclusions:\nHeat/steam treatment, residual spray, vacuuming, and prevention tips." },
-        { title: "Bed Bugs Treatment: Floor Area: 101-150 sqm", price: "₱4,899", desc: "Inclusions:\nHeat/steam treatment, residual spray, vacuuming, and prevention tips." },
-        { title: "Bed Bugs Treatment: Floor Area: 151-200 sqm", price: "₱5,899", desc: "Inclusions:\nHeat/steam treatment, residual spray, vacuuming, and prevention tips." },
-      ];
+      categories = pestControlCategories;
     } else if (selectedSubservice === "Appliance Repair") {
-      categories = [
-        { title: "Inspection Fee", price: "₱300", desc: "Applies if service did not proceed\nInclusions:\nOn-site visit by technician, Basic checking & assessment of appliance, Diagnosis of issues & repair needs, Estimate/quotation for actual repair" },
-        { title: "Refrigerator Repair", price: "₱800 per unit", desc: "Inclusions:\nOn-site visit by technician, Diagnostic check of cooling system, thermostat, compressor, Cleaning of condenser coils (if needed), Basic troubleshooting & recommendations, Replacement parts not included" },
-        { title: "Commercial Freezer Repair", price: "₱1,000 per unit", desc: "Inclusions:\nOn-site visit by technician, Inspection of freezer motor & compressor, Check for leaks, thermostat, fan & wiring issues, Temperature test & calibration, Replacement parts not included" },
-        { title: "TV Repair (Up to 50\")", price: "₱500 per unit", desc: "Inclusions:\nOn-site visit by technician, Panel & circuit board check, Diagnosis of screen, sound, or power issues, Basic cleaning of internal board & vents, Replacement parts not included" },
-        { title: "TV Repair (51\" to 70\")", price: "₱800 per unit", desc: "Inclusions:\nOn-site visit by technician, Panel & circuit board check, Diagnosis of screen, sound, or power issues, Basic cleaning of internal board & vents, Replacement parts not included" },
-        { title: "TV Repair (71\" to 90\")", price: "₱1,000 per unit", desc: "Inclusions:\nOn-site visit by technician, Panel & circuit board check, Diagnosis of screen, sound, or power issues, Basic cleaning of internal board & vents, Replacement parts not included" },
-        { title: "TV Installation", price: "₱300 per unit", desc: "Inclusions:\nWall mounting or stand setup, Secure wiring & cable management, Testing & demo for client, Bracket not included" },
-        { title: "Washing Machine Repair", price: "₱800 per unit", desc: "Inclusions:\nOn-site visit by technician, Diagnostic check of motor, pump, & wiring, Spin, rinse, and water inlet test, Cleaning of accessible filters, Replacement parts not included" },
-        { title: "Washing Machine Cleaning Top Load", price: "₱500 per unit", desc: "Inclusions:\nDrum cleaning & descaling, Removal of dirt, lint, & soap residue, Exterior wipe-down" },
-        { title: "Washing Machine Cleaning Front Load", price: "₱700 per unit", desc: "Inclusions:\nDrum cleaning & descaling, Removal of dirt, lint, & soap residue, Exterior wipe-down" },
-        { title: "Stand Fan Repair", price: "₱500 per unit", desc: "Inclusions:\nOn-site visit by technician, Motor & wiring inspection, Bearing & blade cleaning, Switch & speed test, Replacement parts not included" },
-        { title: "Tower Fan Repair", price: "₱700 per unit", desc: "Inclusions:\nOn-site visit by technician, Motor and electronic panel check, Cleaning & lubrication of fan mechanism, Speed & oscillation test, Replacement parts not included" },
-        { title: "Range Hood Repair", price: "₱600 per unit", desc: "Inclusions:\nOn-site visit by technician, Motor, filter, and switch inspection, Cleaning of grease & dirt buildup, Basic troubleshooting, Replacement parts not included" },
-        { title: "Range Hood Installation", price: "₱800 per unit", desc: "Inclusions:\nOn-site visit by technician, Proper mounting & setup, Electrical connection & testing, Smoke test for suction function" },
-        { title: "Microwave Repair – Small", price: "₱450 per unit", desc: "Inclusions:\nOn-site visit by technician, Inspection of magnetron, fuse, & panel, Door seal & safety check, Heating function test, Replacement parts not included" },
-        { title: "Microwave Repair – Medium", price: "₱700 per unit", desc: "Inclusions:\nOn-site visit by technician, Inspection of magnetron, fuse, & panel, Door seal & safety check, Heating function test, Replacement parts not included" },
-        { title: "Microwave Repair – Large", price: "₱850 per unit", desc: "Inclusions:\nOn-site visit by technician, Inspection of magnetron, fuse, & panel, Door seal & safety check, Heating function test, Replacement parts not included" },
-        { title: "Oven Repair", price: "₱750 per unit", desc: "Inclusions:\nOn-site visit by technician, Check heating elements, thermostat, & wiring, Panel inspection & temperature test, Basic cleaning of accessible parts, Replacement parts not included" },
-        { title: "Rice Cooker Repair", price: "₱400 per unit", desc: "Inclusions:\nOn-site visit by technician, Basic checking & assessment of appliance, Diagnosis of issues & repair needs, Estimate/quotation for actual repair, Replacement parts not included" },
-      ];
+      categories = applianceRepairCategories;
     } else {
-      // Placeholder for other indoor subservices
       categories = [
         { title: `${selectedSubservice} - Service`, price: "Contact for price", desc: "Details will be added soon." },
       ];
@@ -271,44 +124,53 @@ export default function BookingScreen() {
       {/* Categories */}
       <View style={styles.categoriesContainer}>
         {categories.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.categoryBox,
-              (isIndoor
-                ? selectedCategoryMap[selectedService][selectedSubservice] === item.title
-                : selectedCategoryMap[selectedService] === item.title) && styles.selectedBox,
-            ]}
-            onPress={() =>
-              setSelectedCategoryMap((prev: any) => {
-                const copy = { ...prev };
-                if (isIndoor) {
-                  copy[selectedService] = { ...copy[selectedService], [selectedSubservice]: item.title };
-                } else {
-                  copy[selectedService] = item.title;
-                }
-                return copy;
-              })
-            }
-          >
-            <View style={styles.categoryTextContainer}>
-              <Text style={styles.categoryTitle}>{item.title}</Text>
-              {'size' in item && item.size && (
-                <Text style={styles.categorySize}>{item.size}</Text>
-              )}
-              {'price' in item && item.price && (
-                <Text style={styles.categorySize}>{item.price}</Text>
-              )}
-              <Text style={styles.categoryDesc}>{item.desc}</Text>
-            </View>
-            <View style={styles.radioCircle}>
-              {(isIndoor
-                ? selectedCategoryMap[selectedService][selectedSubservice] === item.title
-                : selectedCategoryMap[selectedService] === item.title) && (
-                <View style={styles.radioInner} />
+          item.section === "header" ? (
+            <View key={index} style={{ marginTop: 18, marginBottom: 6 }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "#222" }}>{item.title}</Text>
+              {item.desc && (
+                <Text style={{ fontSize: 14, color: "#444", marginBottom: 4 }}>{item.desc}</Text>
               )}
             </View>
-          </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.categoryBox,
+                (isIndoor
+                  ? selectedCategoryMap[selectedService][selectedSubservice] === item.title
+                  : selectedCategoryMap[selectedService] === item.title) && styles.selectedBox,
+              ]}
+              onPress={() =>
+                setSelectedCategoryMap((prev: any) => {
+                  const copy = { ...prev };
+                  if (isIndoor) {
+                    copy[selectedService] = { ...copy[selectedService], [selectedSubservice]: item.title };
+                  } else {
+                    copy[selectedService] = item.title;
+                  }
+                  return copy;
+                })
+              }
+            >
+              <View style={styles.categoryTextContainer}>
+                <Text style={styles.categoryTitle}>{item.title}</Text>
+                {'size' in item && item.size && (
+                  <Text style={styles.categorySize}>{item.size}</Text>
+                )}
+                {'price' in item && item.price && (
+                  <Text style={styles.categorySize}>{item.price}</Text>
+                )}
+                <Text style={styles.categoryDesc}>{item.desc}</Text>
+              </View>
+              <View style={styles.radioCircle}>
+                {(isIndoor
+                  ? selectedCategoryMap[selectedService][selectedSubservice] === item.title
+                  : selectedCategoryMap[selectedService] === item.title) && (
+                  <View style={styles.radioInner} />
+                )}
+              </View>
+            </TouchableOpacity>
+          )
         ))}
       </View>
 

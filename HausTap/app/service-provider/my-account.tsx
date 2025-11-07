@@ -1,23 +1,24 @@
 import {
-  AntDesign,
-  Entypo,
-  FontAwesome,
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons
+    AntDesign,
+    Entypo,
+    FontAwesome,
+    Ionicons,
+    MaterialCommunityIcons,
+    MaterialIcons
 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
+    LayoutAnimation,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    View,
 } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android') {
@@ -28,6 +29,7 @@ if (Platform.OS === 'android') {
 
 export default function App() {
   const router = useRouter();
+  const { logout } = useAuth();
   // Dropdown toggle states
   const [showProfile, setShowProfile] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
@@ -235,7 +237,17 @@ export default function App() {
       </ScrollView>
 
       {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutButton}>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={async () => {
+          try {
+            await logout();
+          } catch (e) {
+            // ignore
+          }
+          router.replace('/Log-in');
+        }}
+      >
         <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
     </View>

@@ -1,22 +1,29 @@
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
-import { SHOW_CLIENT_HOME } from "../src/devFlags";
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { useAuth } from './context/AuthContext';
 
+// Entrypoint: decide where to route the user based on auth state.
 export default function Index() {
   const router = useRouter();
+  const { user, loading } = useAuth();
+
   useEffect(() => {
-    // Delay navigation slightly to ensure the Root Layout (navigator/Slot)
-    // has mounted. Navigating immediately in the first render can cause
-    // "Attempted to navigate before mounting the Root Layout" errors.
-    const timer = setTimeout(() => {
-      if (SHOW_CLIENT_HOME) {
-        router.replace("/service-provider");
-      } else {
-        // When ready, set the flag to false to route to signup (partner flow)
-        router.replace("/partner");
+    if (loading) return;
+
+    // Small timeout to avoid navigating during initial mount.
+    const t = setTimeout(() => {
+      if (!user) {
+        router.replace('/Log-in');
+        return;
       }
+
+      // Route based on role
+      if (user.role === 'client') router.replace('/client-side');
+      else router.replace('/service-provider');
     }, 50);
-    return () => clearTimeout(timer);
-  }, []);
+
+    return () => clearTimeout(t);
+  }, [user, loading]);
+
   return null;
 }

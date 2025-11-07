@@ -8,6 +8,15 @@ export default function SelectRingtoneScreen() {
   const router = useRouter();
   const [selectedTone, setSelectedTone] = useState(settingsStore.getRingtone());
 
+  // subscribe to store updates (e.g. when persisted value loads)
+  React.useEffect(() => {
+    const unsub = settingsStore.subscribe(() => {
+      const t = settingsStore.getRingtone();
+      setSelectedTone(t);
+    });
+    return unsub;
+  }, []);
+
   const ringtones = [
     "Honk (Default)",
     "Bottle",

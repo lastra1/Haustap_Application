@@ -1,20 +1,108 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import CategoryButton from "./components/CategoryButton";
+import NotificationPopup from './notification/user-notif-popup';
 
 export default function ClientHomeScreen() {
   const router = useRouter();
+  const [search, setSearch] = React.useState("");
+  const [showNotifications, setShowNotifications] = React.useState(false);
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
+  const searchIndex = [
+    // Top-level categories
+    { title: "Cleaning Services", route: "/client-side/cleaning-services" },
+    { title: "Indoor Services", route: "/client-side/indoor-services" },
+    { title: "Outdoor Services", route: "/client-side/outdoor-services" },
+    { title: "Beauty Services", route: "/client-side/beauty-services" },
+    { title: "Wellness Services", route: "/client-side/wellness-services" },
+    { title: "Tech & Gadget Services", route: "/client-side/tech-gadget-services" },
+
+    // Home cleaning subpages
+    { title: "Bungalow", route: "/client-side/cleaning-services/homeCleaning/bungalow" },
+    { title: "Condominium Studio / 1BR", route: "/client-side/cleaning-services/homeCleaning/condo-studio" },
+    { title: "Condominium 2BR", route: "/client-side/cleaning-services/homeCleaning/condominium2br" },
+    { title: "Condominium Penthouse", route: "/client-side/cleaning-services/homeCleaning/penthouse" },
+    { title: "Duplex Smaller", route: "/client-side/cleaning-services/homeCleaning/duplex-smaller" },
+    { title: "Duplex Larger", route: "/client-side/cleaning-services/homeCleaning/duplex-larger" },
+    { title: "Container House Single", route: "/client-side/cleaning-services/homeCleaning/container-house-single" },
+    { title: "Container House Multiple", route: "/client-side/cleaning-services/homeCleaning/container-house-multiple" },
+    { title: "Stilt House Small", route: "/client-side/cleaning-services/homeCleaning/stilt-house-small" },
+    { title: "Stilt House Large", route: "/client-side/cleaning-services/homeCleaning/stilt-house-large" },
+    { title: "Mansion Smaller", route: "/client-side/cleaning-services/homeCleaning/mansion-smaller" },
+    { title: "Mansion Larger", route: "/client-side/cleaning-services/homeCleaning/mansion-larger" },
+    { title: "Villa Smaller", route: "/client-side/cleaning-services/homeCleaning/villa-smaller" },
+    { title: "Villa Larger", route: "/client-side/cleaning-services/homeCleaning/villa-larger" },
+
+    // AC cleaning
+    { title: "AC Cleaning", route: "/client-side/cleaning-services/ACcleaning" },
+    { title: "AC Deep Cleaning", route: "/client-side/cleaning-services/ACdeepCleaning" },
+
+    // Beauty
+    { title: "Hair Services", route: "/client-side/beauty-services/hair" },
+    { title: "Nail Care", route: "/client-side/beauty-services/nailCare" },
+    { title: "Nails", route: "/client-side/beauty-services/nails" },
+    { title: "Make-up", route: "/client-side/beauty-services/makeup" },
+    { title: "Lashes", route: "/client-side/beauty-services/lashes" },
+    { title: "Beauty Packages", route: "/client-side/beauty-services/packages" },
+
+    // Wellness
+    { title: "Massage", route: "/client-side/wellness-services/massage" },
+    { title: "Wellness Packages", route: "/client-side/wellness-services/packages" },
+    { title: "Spa", route: "/client-side/wellness-services/spa" },
+    { title: "Therapy", route: "/client-side/wellness-services/therapy" },
+
+    // Tech & Gadget
+    { title: "Mobile Phone", route: "/client-side/tech-gadget-services/mobile" },
+    { title: "Laptop & Desktop PC", route: "/client-side/tech-gadget-services/computer" },
+    { title: "Tablet & iPad", route: "/client-side/tech-gadget-services/tablet" },
+    { title: "Game & Console", route: "/client-side/tech-gadget-services/gaming" },
+
+    // Indoor services (examples)
+    { title: "Appliance Repair", route: "/client-side/indoor-services/applianceRepair" },
+    { title: "Electrical", route: "/client-side/indoor-services/electrical" },
+    { title: "Handyman", route: "/client-side/indoor-services/handyman" },
+    { title: "Pest Control (Indoor)", route: "/client-side/indoor-services/pestControl" },
+    { title: "Plumbing", route: "/client-side/indoor-services/plumbing" },
+  ];
+
+  const results = search.trim()
+    ? searchIndex.filter(item => item.title.toLowerCase().includes(search.trim().toLowerCase()))
+    : [];
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let mounted = true;
+      const loadCount = async () => {
+        try {
+          const raw = await AsyncStorage.getItem('HT_notifications');
+          if (!raw) {
+            setUnreadCount(0);
+            return;
+          }
+          const parsed = JSON.parse(raw) as Array<{ isRead?: boolean }>;
+          if (mounted) setUnreadCount(parsed.filter(n => !n.isRead).length);
+        } catch (e) {
+          console.warn('Failed to load notifications count', e);
+        }
+      };
+      loadCount();
+      return () => { mounted = false; };
+    }, [])
+  );
   return (
     <View style={{ flex: 1, backgroundColor: "#f8f9fa" }}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -26,10 +114,17 @@ export default function ClientHomeScreen() {
           />
 
           {/* Notification Icon */}
-          <TouchableOpacity style={styles.notificationIcon}>
+          <TouchableOpacity style={styles.notificationIcon} onPress={() => setShowNotifications(true)}>
             <Ionicons name="notifications-outline" size={24} color="#3DC1C6" />
-            <View style={styles.notificationDot} />
+            {unreadCount > 0 ? (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>{unreadCount > 99 ? '99+' : String(unreadCount)}</Text>
+              </View>
+            ) : (
+              <View style={styles.notificationDot} />
+            )}
           </TouchableOpacity>
+          <NotificationPopup visible={showNotifications} onClose={() => setShowNotifications(false)} />
 
           {/* Search Bar Overlay */}
           <View style={styles.searchContainer}>
@@ -37,9 +132,30 @@ export default function ClientHomeScreen() {
               placeholder="Search services"
               placeholderTextColor="#888"
               style={styles.searchInput}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
             />
             <Ionicons name="search" size={20} color="#888" />
           </View>
+
+          {/* Search results dropdown */}
+          {results.length > 0 && (
+            <View style={styles.searchResults}>
+              {results.slice(0, 8).map((r) => (
+                <TouchableOpacity
+                  key={r.route}
+                  style={styles.resultItem}
+                  onPress={() => {
+                    setSearch("");
+                    router.push(r.route as any);
+                  }}
+                >
+                  <Text style={styles.resultText}>{r.title}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Categories */}
@@ -57,13 +173,25 @@ export default function ClientHomeScreen() {
               key={category}
               title={category}
               onPress={() => {
-                if (category === "Cleaning Services") {
-                  router.push("/client-side/booking");
-                } else if (category === "Indoor Services") {
-                  // Open booking with Indoor Services preselected and default to Handyman
-                  router.push(
-                    `/client-side/booking?service=${encodeURIComponent("Indoor Services")}&sub=${encodeURIComponent("Handyman")}`
-                  );
+                switch(category) {
+                  case "Cleaning Services":
+                    router.push("/client-side/cleaning-services");
+                    break;
+                  case "Indoor Services":
+                    router.push("/client-side/indoor-services");
+                    break;
+                  case "Outdoor Services":
+                    router.push("/client-side/outdoor-services");
+                    break;
+                  case "Beauty Services":
+                    router.push("/client-side/beauty-services");
+                    break;
+                  case "Tech & Gadget Services":
+                    router.push("/client-side/tech-gadget-services");
+                    break;
+                  case "Wellness Services":
+                    router.push("/client-side/wellness-services");
+                    break;
                 }
               }}
             />
@@ -170,28 +298,7 @@ export default function ClientHomeScreen() {
         </View>
       </ScrollView>
 
-      {/* Footer Navigation Bar */}
-      <View style={styles.footerNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="calendar-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Bookings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="chatbubble-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="person-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Footer handled by layout */}
     </View>
   );
 }
@@ -229,6 +336,23 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: "red",
   },
+  notificationBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -245,6 +369,25 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginRight: 8,
+  },
+  searchResults: {
+    position: "absolute",
+    top: 170,
+    left: "5%",
+    width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    elevation: 6,
+    zIndex: 1000,
+    maxHeight: 240,
+  },
+  resultItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  resultText: {
+    fontSize: 16,
   },
   sectionTitle: {
     fontWeight: "bold",
@@ -381,21 +524,5 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 
-  // Footer Nav
-  footerNav: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#E0F7F9",
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#ccc",
-  },
-  navItem: {
-    alignItems: "center",
-  },
-  navText: {
-    fontSize: 12,
-    color: "#3DC1C6",
-    marginTop: 4,
-  },
+  // footer is provided by layout
 });

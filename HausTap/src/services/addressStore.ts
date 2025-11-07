@@ -1,37 +1,63 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 type Address = {
   id: string;
-  houseNumber: string;
-  street: string;
-  barangayName: string;
-  municipal: string;
-  province: string;
+  houseNumber?: string;
+  street?: string;
+  barangayName?: string;
+  municipal?: string;
+  province?: string;
 };
+
+const STORAGE_KEY = 'HT_addresses';
 
 class AddressStore {
   private addresses: Address[] = [];
 
+  constructor() {
+    this.load();
+  }
+
+  async load() {
+    try {
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      if (raw) this.addresses = JSON.parse(raw);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  async persist() {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(this.addresses));
+    } catch (e) {
+      // ignore
+    }
+  }
+
   getAddresses() {
-    return this.addresses;
+    return this.addresses.slice();
   }
 
-  addAddress(address: Omit<Address, 'id'>) {
-    const newAddress: Address = { id: `${Date.now()}`, ...address };
-    this.addresses.push(newAddress);
-    console.log('[addressStore] added', newAddress);
-    return newAddress;
+  async addAddress(a: Address) {
+    this.addresses.push(a);
+    await this.persist();
   }
 
-  deleteAddress(id: string) {
-    const before = this.addresses.length;
-    this.addresses = this.addresses.filter(a => a.id !== id);
-    console.log(`[addressStore] deleted ${id} (before=${before}, after=${this.addresses.length})`);
+  async updateAddress(id: string, patch: Partial<Address>) {
+    const idx = this.addresses.findIndex((r) => r.id === id);
+    if (idx !== -1) {
+      this.addresses[idx] = { ...this.addresses[idx], ...patch };
+      await this.persist();
+    }
   }
 
-  clear() {
-    this.addresses = [];
+  async deleteAddress(id: string) {
+    this.addresses = this.addresses.filter((r) => r.id !== id);
+    await this.persist();
   }
 }
 
 export const addressStore = new AddressStore();
-export type { Address };
 
+export default addressStore;

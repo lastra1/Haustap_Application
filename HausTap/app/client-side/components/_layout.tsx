@@ -1,14 +1,14 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  SafeAreaView,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 export default function BookingScreen() {
   const router = useRouter();
@@ -143,7 +143,7 @@ export default function BookingScreen() {
       {/* Next Button */}
       <TouchableOpacity
         style={styles.nextButton}
-        onPress={() => router.push("/client-side/booking")}
+        onPress={() => router.push("/(client)/nextStep")}
       >
         <Text style={styles.nextText}>Next</Text>
       </TouchableOpacity>
