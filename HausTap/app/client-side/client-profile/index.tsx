@@ -1,14 +1,13 @@
 // app/client-profile/index.tsx
-import { Ionicons, MaterialIcons, Entypo, FontAwesome5 } from "@expo/vector-icons";
+import { Entypo, FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 
 export default function MyAccount() {
@@ -55,25 +54,38 @@ export default function MyAccount() {
         </TouchableOpacity>
         {expanded === "account" && (
           <View style={styles.dropdown}>
-            <Text style={styles.dropdownItem}>Profile</Text>
-            <Text style={styles.dropdownItem}>Addresses</Text>
+            <TouchableOpacity style={styles.dropdownButton} onPress={() => { setExpanded(null); router.push('/client-side/client-profile/user-profile'); }}>
+              <Text style={styles.dropdownItem}>Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.dropdownButton} onPress={() => { setExpanded(null); router.push('/client-side/client-profile/user-saved-address' as any); }}>
+              <Text style={styles.dropdownItem}>Addresses</Text>
+            </TouchableOpacity>
           </View>
         )}
 
         {/* Referral */}
-        <TouchableOpacity style={styles.sectionHeader}>
+        <TouchableOpacity 
+          style={styles.sectionHeader}
+          onPress={() => router.push('/client-side/client-profile/user-referral' as any)}
+        >
           <Ionicons name="gift-outline" size={18} color="#000" />
           <Text style={styles.sectionTitle}>Referral</Text>
         </TouchableOpacity>
 
         {/* My Vouchers */}
-        <TouchableOpacity style={styles.sectionHeader}>
-          <MaterialIcons name="confirmation-number" size={18} color="#000" />
-          <Text style={styles.sectionTitle}>My Vouchers</Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => router.push('/client-side/client-profile/user-voucher' as any)}
+          >
+            <MaterialIcons name="confirmation-number" size={18} color="#000" />
+            <Text style={styles.sectionTitle}>My Vouchers</Text>
+          </TouchableOpacity>
 
         {/* Connect Haustap */}
-        <TouchableOpacity style={styles.sectionHeader}>
+        <TouchableOpacity 
+          style={styles.sectionHeader}
+          onPress={() => router.push('/client-side/client-profile/user-connect-haustap' as any)}
+        >
           <Entypo name="link" size={18} color="#000" />
           <Text style={styles.sectionTitle}>Connect Haustap</Text>
         </TouchableOpacity>
@@ -91,9 +103,15 @@ export default function MyAccount() {
         </TouchableOpacity>
         {expanded === "privacy" && (
           <View style={styles.dropdown}>
-            <Text style={styles.dropdownItem}>Terms and Conditions</Text>
-            <Text style={styles.dropdownItem}>Privacy Policy</Text>
-            <Text style={styles.dropdownItem}>Account Deletion</Text>
+              <TouchableOpacity style={styles.dropdownButton} onPress={() => { setExpanded(null); router.push('/client-side/client-profile/terms-conditions' as any); }}>
+                <Text style={styles.dropdownItem}>Terms and Conditions</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.dropdownButton} onPress={() => { setExpanded(null); router.push('/client-side/client-profile/privacy-policy' as any); }}>
+                <Text style={styles.dropdownItem}>Privacy Policy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.dropdownButton} onPress={() => { setExpanded(null); router.push('/client-side/client-profile/user-account-deletion' as any); }}>
+                <Text style={styles.dropdownItem}>Account Deletion</Text>
+              </TouchableOpacity>
           </View>
         )}
 
@@ -110,8 +128,12 @@ export default function MyAccount() {
         </TouchableOpacity>
         {expanded === "settings" && (
           <View style={styles.dropdown}>
-            <Text style={styles.dropdownItem}>Language</Text>
-            <Text style={styles.dropdownItem}>Sound</Text>
+            <TouchableOpacity style={styles.dropdownButton} onPress={() => { setExpanded(null); router.push('/client-side/client-profile/language-setting' as any); }}>
+              <Text style={styles.dropdownItem}>Language</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.dropdownButton} onPress={() => { setExpanded(null); router.push('/client-side/client-profile/user-sound' as any); }}>
+              <Text style={styles.dropdownItem}>Sound</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -122,7 +144,10 @@ export default function MyAccount() {
         </TouchableOpacity>
 
         {/* About Us */}
-        <TouchableOpacity style={styles.sectionHeader}>
+        <TouchableOpacity 
+          style={styles.sectionHeader}
+          onPress={() => router.push('/client-side/client-profile/user-about')}
+        >
           <Ionicons name="information-circle-outline" size={18} color="#000" />
           <Text style={styles.sectionTitle}>About us</Text>
           <Text style={styles.versionText}>v1</Text>
@@ -199,6 +224,13 @@ const styles = StyleSheet.create({
   dropdownItem: {
     paddingVertical: 4,
     color: "#444",
+  },
+  dropdownButton: {
+    paddingVertical: 8,
+  },
+  backText: {
+    color: '#3DC1C6',
+    fontWeight: '600',
   },
   versionText: {
     marginLeft: "auto",

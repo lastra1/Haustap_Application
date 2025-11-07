@@ -24,6 +24,7 @@ const mockOngoing = [
     voucherCode: '',
     voucherValue: 0,
     status: 'ongoing',
+    conversationId: 'ongoing-001', // Using booking ID as conversation ID
   },
 ];
 
@@ -100,6 +101,7 @@ export default function BookingOngoing() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.mainCategory}>{b.mainCategory}</Text>
                     <Text style={styles.subcategory}>{b.subCategory}</Text>
+                    <Text style={styles.bookingId}>Booking ID: {b.id}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.priceText}>{formatCurrency(Number(b.total || 0))}</Text>
@@ -176,11 +178,18 @@ export default function BookingOngoing() {
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                           <Text style={styles.providerName}>{b.providerName}</Text>
                           <TouchableOpacity
-                            style={styles.messageBtn}
-                            onPress={() => router.push({ pathname: '/client-side/chat', params: { providerId: b.providerId } } as any)}
-                          >
-                            <Ionicons name="chatbubble-ellipses-outline" size={18} color="#3DC1C6" />
-                          </TouchableOpacity>
+                              style={styles.messageBtn}
+                              onPress={() => router.push({ 
+                                pathname: '/client-side/chat', 
+                                params: { 
+                                  conversationId: b.id,  // Use booking ID as conversation ID
+                                  providerId: b.providerId,
+                                  providerName: b.providerName
+                                } 
+                              } as any)}
+                            >
+                              <Ionicons name="chatbubble-ellipses-outline" size={18} color="#3DC1C6" />
+                            </TouchableOpacity>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                           <Ionicons name="star" size={14} color="#FFD700" />
@@ -196,28 +205,7 @@ export default function BookingOngoing() {
         })}
       </ScrollView>
 
-      {/* Sticky footer */}
-      <View style={styles.footerNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side')}>
-          <Ionicons name="home" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/client-booking-summary/booking-pending')}>
-          <Ionicons name="calendar-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Bookings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push({ pathname: '/client-side/chat' } as any)}>
-          <Ionicons name="chatbubble-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/client-profile')}>
-          <Ionicons name="person-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Footer provided by layout */}
     </View>
   );
 }
@@ -236,6 +224,7 @@ const styles = StyleSheet.create({
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   mainCategory: { fontSize: 18, fontWeight: '700' },
   subcategory: { fontSize: 14, color: '#666', marginTop: 6 },
+  bookingId: { fontSize: 12, color: '#666', marginTop: 4 },
   priceText: { fontSize: 16, fontWeight: '700', color: '#00ADB5' },
   chev: { fontSize: 12, color: '#999', marginTop: 6 },
   divider: { height: 1, backgroundColor: '#E0E0E0', marginVertical: 12 },
@@ -268,8 +257,5 @@ const styles = StyleSheet.create({
   ratingText: { fontSize: 13, color: '#666', marginLeft: 6 },
   messageBtn: { marginLeft: 8, padding: 6, borderRadius: 20, backgroundColor: '#E8F8F8' },
 
-  // Footer Nav
-  footerNav: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: '#E0F7F9', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#ccc' },
-  navItem: { alignItems: 'center' },
-  navText: { fontSize: 12, color: '#3DC1C6', marginTop: 4 },
+  // footer handled by layout
 });

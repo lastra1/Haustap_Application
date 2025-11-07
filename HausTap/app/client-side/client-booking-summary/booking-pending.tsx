@@ -108,6 +108,7 @@ export default function BookingPending() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.mainCategory}>{b.mainCategory}</Text>
                   <Text style={styles.subcategory}>{b.subCategory}</Text>
+                  <Text style={styles.bookingId}>Booking ID: {b.id}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={styles.priceText}>₱{b.total.toFixed(2)}</Text>
@@ -181,7 +182,13 @@ export default function BookingPending() {
                 <Text style={styles.payNote}>Full payment will be collected directly by the service provider upon completion of the service.</Text>
 
                 <View style={styles.footerRow}> 
-                  <TouchableOpacity style={styles.cancelBtn} onPress={() => alert('Cancel booking: ' + b.id)}>
+                  <TouchableOpacity 
+                    style={styles.cancelBtn} 
+                    onPress={() => router.push({
+                      pathname: '/client-side/client-booking-summary/cancel-booking-form',
+                      params: { bookingId: b.id }
+                    } as any)}
+                  >
                     <Text style={styles.cancelText}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
@@ -192,28 +199,7 @@ export default function BookingPending() {
       })}
       </ScrollView>
 
-      {/* Footer Navigation Bar (sticky) */}
-      <View style={styles.footerNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side')}>
-          <Ionicons name="home" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/client-booking-summary/booking-pending')}>
-          <Ionicons name="calendar-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Bookings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/chat')}>
-          <Ionicons name="chatbubble-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/client-profile')}>
-          <Ionicons name="person-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Footer provided by layout */}
     </View>
   );
 }
@@ -231,6 +217,7 @@ const styles = StyleSheet.create({
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   mainCategory: { fontSize: 18, fontWeight: '700' },
   subcategory: { fontSize: 14, color: '#666', marginTop: 6 },
+  bookingId: { fontSize: 12, color: '#666', marginTop: 4 },
   priceText: { fontSize: 16, fontWeight: '700', color: '#00ADB5' },
   chev: { fontSize: 12, color: '#999', marginTop: 6 },
   divider: { height: 1, backgroundColor: '#E0E0E0', marginVertical: 12 },
@@ -262,16 +249,6 @@ const styles = StyleSheet.create({
   cancelText: { color: '#666', fontWeight: '600' },
   viewBtn: { backgroundColor: '#3DC1C6', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6 },
   viewText: { color: '#fff', fontWeight: '700' },
-  // Footer Nav
-  footerNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#E0F7F9',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#ccc',
-  },
-  navItem: { alignItems: 'center' },
-  navText: { fontSize: 12, color: '#3DC1C6', marginTop: 4 },
+  // footer handled by layout
   pageContainer: { flex: 1, backgroundColor: '#fff' },
 });

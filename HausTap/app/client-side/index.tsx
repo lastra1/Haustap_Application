@@ -1,4 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -12,10 +14,13 @@ import {
   View,
 } from "react-native";
 import CategoryButton from "./components/CategoryButton";
+import NotificationPopup from './notification/user-notif-popup';
 
 export default function ClientHomeScreen() {
   const router = useRouter();
   const [search, setSearch] = React.useState("");
+  const [showNotifications, setShowNotifications] = React.useState(false);
+  const [unreadCount, setUnreadCount] = React.useState(0);
 
   const searchIndex = [
     // Top-level categories
@@ -77,6 +82,27 @@ export default function ClientHomeScreen() {
   const results = search.trim()
     ? searchIndex.filter(item => item.title.toLowerCase().includes(search.trim().toLowerCase()))
     : [];
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let mounted = true;
+      const loadCount = async () => {
+        try {
+          const raw = await AsyncStorage.getItem('HT_notifications');
+          if (!raw) {
+            setUnreadCount(0);
+            return;
+          }
+          const parsed = JSON.parse(raw) as Array<{ isRead?: boolean }>;
+          if (mounted) setUnreadCount(parsed.filter(n => !n.isRead).length);
+        } catch (e) {
+          console.warn('Failed to load notifications count', e);
+        }
+      };
+      loadCount();
+      return () => { mounted = false; };
+    }, [])
+  );
   return (
     <View style={{ flex: 1, backgroundColor: "#f8f9fa" }}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -88,10 +114,17 @@ export default function ClientHomeScreen() {
           />
 
           {/* Notification Icon */}
-          <TouchableOpacity style={styles.notificationIcon}>
+          <TouchableOpacity style={styles.notificationIcon} onPress={() => setShowNotifications(true)}>
             <Ionicons name="notifications-outline" size={24} color="#3DC1C6" />
-            <View style={styles.notificationDot} />
+            {unreadCount > 0 ? (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>{unreadCount > 99 ? '99+' : String(unreadCount)}</Text>
+              </View>
+            ) : (
+              <View style={styles.notificationDot} />
+            )}
           </TouchableOpacity>
+          <NotificationPopup visible={showNotifications} onClose={() => setShowNotifications(false)} />
 
           {/* Search Bar Overlay */}
           <View style={styles.searchContainer}>
@@ -265,28 +298,7 @@ export default function ClientHomeScreen() {
         </View>
       </ScrollView>
 
-      {/* Footer Navigation Bar */}
-      <View style={styles.footerNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/client-booking-summary/booking-pending')}>
-          <Ionicons name="calendar-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Bookings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push({ pathname: '/client-side/chat' } as any)}>
-          <Ionicons name="chatbubble-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/client-profile')}>
-          <Ionicons name="person-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Footer handled by layout */}
     </View>
   );
 }
@@ -323,6 +335,23 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: "red",
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
   searchContainer: {
     flexDirection: "row",
@@ -495,21 +524,5 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 
-  // Footer Nav
-  footerNav: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#E0F7F9",
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#ccc",
-  },
-  navItem: {
-    alignItems: "center",
-  },
-  navText: {
-    fontSize: 12,
-    color: "#3DC1C6",
-    marginTop: 4,
-  },
+  // footer is provided by layout
 });

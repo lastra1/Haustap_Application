@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Example completed booking shown when no stored completed bookings exist
 const mockCompleted = [
@@ -24,7 +25,9 @@ const mockCompleted = [
     voucherCode: '',
     voucherValue: 0,
     status: 'completed',
+    completedAt: new Date().toISOString(), // Add timestamp when booking is completed
     isRated: false,
+    conversationId: 'completed-001', // Using booking ID as conversation ID
   },
 ];
 
@@ -33,6 +36,15 @@ export default function BookingCompleted() {
   const [bookings, setBookings] = useState<typeof mockCompleted>(mockCompleted);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showMoreOptions, setShowMoreOptions] = useState<string | null>(null);
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [filterFrom, setFilterFrom] = useState<string | null>(null);
+  const [filterTo, setFilterTo] = useState<string | null>(null);
+  const [filterApplied, setFilterApplied] = useState(false);
+  // date picker states
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
+  const [showFromPicker, setShowFromPicker] = useState(false);
+  const [showToPicker, setShowToPicker] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -79,17 +91,98 @@ export default function BookingCompleted() {
   };
 
   const handleReport = (bookingId: string) => {
-    // Implement report functionality
-    Alert.alert('Report Service', 'This feature will be available soon.');
+    router.push({ 
+      pathname: '/client-side/client-booking-summary/report-form',
+      params: { bookingId }
+    } as any);
     setShowMoreOptions(null);
   };
+
+  // compute displayed list based on filter
+  const displayedBookings = (() => {
+    if (!filterApplied || (!filterFrom && !filterTo)) return bookings;
+    try {
+      const from = filterFrom ? new Date(filterFrom) : null;
+      const to = filterTo ? new Date(filterTo) : null;
+      return bookings.filter((b) => {
+        const bd = new Date(b.date);
+        if (isNaN(bd.getTime())) return false;
+        if (from && bd < from) return false;
+        if (to && bd > to) return false;
+        return true;
+      });
+    } catch (e) {
+      return bookings;
+    }
+  })();
 
   return (
     <View style={styles.pageContainer}>
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 140 }}>
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Bookings</Text>
+          <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterVisible(true)}>
+            <Ionicons name="filter" size={20} color="#3DC1C6" />
+          </TouchableOpacity>
         </View>
+      <Modal visible={filterVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Filter by Date</Text>
+
+            <View style={{ marginTop: 12, width: '100%' }}>
+              <Text style={styles.modalLabel}>From:</Text>
+              <TouchableOpacity style={styles.dateInput} onPress={() => setShowFromPicker(true)}>
+                <Text style={{ color: filterFrom ? '#000' : '#888' }}>{filterFrom ?? 'YYYY-MM-DD'}</Text>
+              </TouchableOpacity>
+              {showFromPicker && (
+                <DateTimePicker
+                  value={fromDate ?? new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(_e: any, d: Date | undefined) => {
+                    // on Android the picker closes automatically; on iOS keep open while user interacts
+                    if (d) {
+                      setFromDate(d);
+                      setFilterFrom(d.toISOString().slice(0, 10));
+                    }
+                    if (Platform.OS !== 'ios') setShowFromPicker(false);
+                  }}
+                />
+              )}
+            </View>
+
+            <View style={{ marginTop: 12, width: '100%' }}>
+              <Text style={styles.modalLabel}>Return:</Text>
+              <TouchableOpacity style={styles.dateInput} onPress={() => setShowToPicker(true)}>
+                <Text style={{ color: filterTo ? '#000' : '#888' }}>{filterTo ?? 'YYYY-MM-DD'}</Text>
+              </TouchableOpacity>
+              {showToPicker && (
+                <DateTimePicker
+                  value={toDate ?? new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(_e: any, d: Date | undefined) => {
+                    if (d) {
+                      setToDate(d);
+                      setFilterTo(d.toISOString().slice(0, 10));
+                    }
+                    if (Platform.OS !== 'ios') setShowToPicker(false);
+                  }}
+                />
+              )}
+            </View>
+
+            <TouchableOpacity style={styles.applyBtn} onPress={() => { setFilterApplied(true); setFilterVisible(false); }}>
+              <Text style={styles.applyText}>Apply</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.clearBtn} onPress={() => { setFilterApplied(false); setFilterFrom(null); setFilterTo(null); setFilterVisible(false); }}>
+              <Text style={styles.clearText}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
         <View style={styles.tabsRow}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -111,7 +204,7 @@ export default function BookingCompleted() {
           </ScrollView>
         </View>
 
-        {bookings.map((b) => {
+  {displayedBookings.map((b) => {
           const expanded = expandedId === b.id;
           return (
             <View key={b.id} style={styles.card}>
@@ -120,6 +213,7 @@ export default function BookingCompleted() {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.mainCategory}>{b.mainCategory}</Text>
                     <Text style={styles.subcategory}>{b.subCategory}</Text>
+                    <Text style={styles.bookingId}>Booking ID: {b.id}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
                     <Text style={styles.priceText}>{formatCurrency(Number(b.total || 0))}</Text>
@@ -127,6 +221,42 @@ export default function BookingCompleted() {
                   </View>
                 </View>
               </TouchableOpacity>
+
+              {!expanded && (
+                <View style={[styles.actionRow, { marginTop: 12 }]}>
+                  {!b.isRated && (
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.rateButton]} 
+                      onPress={() => handleRate(b.id)}
+                    >
+                      <Text style={styles.rateButtonText}>Rate</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.moreButton]} 
+                    onPress={() => setShowMoreOptions(showMoreOptions === b.id ? null : b.id)}
+                  >
+                    <Text style={styles.moreButtonText}>More</Text>
+                  </TouchableOpacity>
+
+                  {showMoreOptions === b.id && (
+                    <View style={styles.moreOptionsPopup}>
+                      <TouchableOpacity
+                        style={styles.moreOption}
+                        onPress={() => handleReturn(b.id)}
+                      >
+                        <Text style={styles.moreOptionText}>Return</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.moreOption}
+                        onPress={() => handleReport(b.id)}
+                      >
+                        <Text style={styles.moreOptionText}>Report</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
 
               {expanded && (
                 <View>
@@ -189,11 +319,18 @@ export default function BookingCompleted() {
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                           <Text style={styles.providerName}>{b.providerName}</Text>
                           <TouchableOpacity
-                            style={styles.messageBtn}
-                            onPress={() => router.push({ pathname: '/client-side/chat', params: { providerId: b.providerId } } as any)}
-                          >
-                            <Ionicons name="chatbubble-ellipses-outline" size={18} color="#3DC1C6" />
-                          </TouchableOpacity>
+                              style={styles.messageBtn}
+                              onPress={() => router.push({ 
+                                pathname: '/client-side/chat', 
+                                params: { 
+                                  conversationId: b.id,  // Use booking ID as conversation ID
+                                  providerId: b.providerId,
+                                  providerName: b.providerName
+                                } 
+                              } as any)}
+                            >
+                              <Ionicons name="chatbubble-ellipses-outline" size={18} color="#3DC1C6" />
+                            </TouchableOpacity>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                           <Ionicons name="star" size={14} color="#FFD700" />
@@ -201,45 +338,45 @@ export default function BookingCompleted() {
                         </View>
                       </View>
                     </View>
-                    
-                    <View style={styles.actionButtons}>
-                      {!b.isRated && (
-                        <TouchableOpacity 
-                          style={[styles.actionButton, styles.rateButton]} 
-                          onPress={() => handleRate(b.id)}
-                        >
-                          <Text style={styles.rateButtonText}>Rate</Text>
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity 
-                        style={[styles.actionButton, styles.moreButton]} 
-                        onPress={() => setShowMoreOptions(showMoreOptions === b.id ? null : b.id)}
-                      >
-                        <Text style={styles.moreButtonText}>More</Text>
-                      </TouchableOpacity>
-
-                      {showMoreOptions === b.id && (
-                        <View style={styles.moreOptionsPopup}>
-                          <TouchableOpacity
-                            style={styles.moreOption}
-                            onPress={() => handleReturn(b.id)}
-                          >
-                            <Text style={styles.moreOptionText}>Return</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.moreOption}
-                            onPress={() => handleReport(b.id)}
-                          >
-                            <Text style={styles.moreOptionText}>Report</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
-                    </View>
                   </View>
 
                   <Text style={styles.reminderText}>
                     Reminder: You may request a return for free within 24 hours after the service. After 24 hours, a ₱300 return fee will be charged.
                   </Text>
+
+                  <View style={[styles.actionRow, { marginTop: 16 }]}>
+                    {!b.isRated && (
+                      <TouchableOpacity 
+                        style={[styles.actionButton, styles.rateButton]} 
+                        onPress={() => handleRate(b.id)}
+                      >
+                        <Text style={styles.rateButtonText}>Rate</Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.moreButton]} 
+                      onPress={() => setShowMoreOptions(showMoreOptions === b.id ? null : b.id)}
+                    >
+                      <Text style={styles.moreButtonText}>More</Text>
+                    </TouchableOpacity>
+
+                    {showMoreOptions === b.id && (
+                      <View style={styles.moreOptionsPopup}>
+                        <TouchableOpacity
+                          style={styles.moreOption}
+                          onPress={() => handleReturn(b.id)}
+                        >
+                          <Text style={styles.moreOptionText}>Return</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.moreOption}
+                          onPress={() => handleReport(b.id)}
+                        >
+                          <Text style={styles.moreOptionText}>Report</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                 </View>
               )}
             </View>
@@ -247,28 +384,7 @@ export default function BookingCompleted() {
         })}
       </ScrollView>
 
-      {/* Sticky footer */}
-      <View style={styles.footerNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side')}>
-          <Ionicons name="home" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/client-booking-summary/booking-pending')}>
-          <Ionicons name="calendar-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Bookings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push({ pathname: '/client-side/chat' } as any)}>
-          <Ionicons name="chatbubble-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/client-side/client-profile')}>
-          <Ionicons name="person-outline" size={22} color="#3DC1C6" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Footer provided by layout */}
     </View>
   );
 }
@@ -276,7 +392,7 @@ export default function BookingCompleted() {
 const styles = StyleSheet.create({
   pageContainer: { flex: 1, backgroundColor: '#fff' },
   container: { flex: 1 },
-  headerRow: { paddingVertical: 8, paddingHorizontal: 16 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16 },
   headerTitle: { fontSize: 20, fontWeight: '700' },
   tabsRow: { flexDirection: 'row', marginVertical: 12, gap: 8, paddingHorizontal: 16 },
   tabButton: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: '#f0f0f0' },
@@ -302,9 +418,11 @@ const styles = StyleSheet.create({
   inclusions: { fontSize: 13, color: '#666', marginTop: 8 },
   notesInput: { backgroundColor: '#f9f9f9', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#EAEAEA' },
   notesText: { fontSize: 13, color: '#666' },
+  bookingId: { fontSize: 12, color: '#666', marginTop: 4 },
   smallLabel: { fontSize: 13, color: '#666' },
   totalsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
+  actionRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
   totalLabel: { fontSize: 16, fontWeight: '800', color: '#333' },
   totalValue: { fontSize: 16, fontWeight: '800', color: '#000' },
   payNote: { fontSize: 11, color: '#666', marginTop: 8, textAlign: 'center', paddingHorizontal: 20 },
@@ -312,6 +430,16 @@ const styles = StyleSheet.create({
   providerName: { fontSize: 14, fontWeight: '700' },
   ratingText: { fontSize: 13, color: '#666', marginLeft: 6 },
   messageBtn: { marginLeft: 8, padding: 6, borderRadius: 20, backgroundColor: '#E8F8F8' },
+  filterBtn: { padding: 8 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: 320, backgroundColor: '#fff', padding: 20, borderRadius: 8, alignItems: 'center' },
+  modalTitle: { fontSize: 16, fontWeight: '700' },
+  modalLabel: { fontSize: 13, color: '#333', marginBottom: 6 },
+  dateInput: { width: '100%', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 6, padding: 8, backgroundColor: '#fff' },
+  applyBtn: { marginTop: 16, backgroundColor: '#3DC1C6', paddingVertical: 10, paddingHorizontal: 28, borderRadius: 8 },
+  applyText: { color: '#fff', fontWeight: '700' },
+  clearBtn: { marginTop: 10, paddingVertical: 8, paddingHorizontal: 20 },
+  clearText: { color: '#666' },
   
   // Action buttons
   actionButtons: { 
@@ -380,19 +508,5 @@ const styles = StyleSheet.create({
     color: '#666',
   },
 
-  // Footer Nav
-  footerNav: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-around', 
-    backgroundColor: '#E0F7F9', 
-    paddingVertical: 10, 
-    borderTopWidth: 1, 
-    borderTopColor: '#ccc',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  navItem: { alignItems: 'center' },
-  navText: { fontSize: 12, color: '#3DC1C6', marginTop: 4 },
+  // footer handled by layout
 });
