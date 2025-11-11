@@ -3,12 +3,12 @@ import { Entypo, FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icon
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { useAuth } from '../../context/AuthContext';
 
@@ -197,10 +197,10 @@ export default function MyAccount() {
         onPress={async () => {
           try {
             await logout();
-            router.replace('/Log-in');
+            router.replace('/auth/log-in');
           } catch (e) {
             // fallback: still navigate
-            router.replace('/Log-in');
+            router.replace('/auth/log-in');
           }
         }}
       >

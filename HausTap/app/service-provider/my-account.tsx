@@ -1,22 +1,22 @@
 import {
-    AntDesign,
-    Entypo,
-    FontAwesome,
-    Ionicons,
-    MaterialCommunityIcons,
-    MaterialIcons
+  AntDesign,
+  Entypo,
+  FontAwesome,
+  Ionicons,
+  MaterialCommunityIcons,
+  MaterialIcons
 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    LayoutAnimation,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    UIManager,
-    View,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
@@ -245,7 +245,7 @@ export default function App() {
           } catch (e) {
             // ignore
           }
-          router.replace('/Log-in');
+          router.replace('/auth/log-in');
         }}
       >
         <Text style={styles.logoutText}>Log out</Text>

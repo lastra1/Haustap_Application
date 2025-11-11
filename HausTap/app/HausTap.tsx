@@ -2,16 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import React, { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -175,7 +175,7 @@ const generateNewOtp = async () => {
         alert('Account created but failed to persist locally.');
       } finally {
         setShowEmailVerification(false);
-        try { router.push('/Log-in'); } catch (_) {}
+  try { router.push('/auth/log-in'); } catch (_) {}
       }
     })();
   };

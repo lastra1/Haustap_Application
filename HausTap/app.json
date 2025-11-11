@@ -4,7 +4,7 @@
     "slug": "HausTap",
     "version": "1.0.0",
     "orientation": "portrait",
-  "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "haustap",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,16 +14,17 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-  "foregroundImage": "./assets/images/logo.png",
-  "backgroundImage": "./assets/images/logo.png",
-  "monochromeImage": "./assets/images/logo.png"
+        "foregroundImage": "./assets/images/logo.png",
+        "backgroundImage": "./assets/images/logo.png",
+        "monochromeImage": "./assets/images/logo.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.boss.dale.HausTap"
     },
     "web": {
       "output": "static",
-  "favicon": "./assets/images/logo.png"
+      "favicon": "./assets/images/logo.png"
     },
     "plugins": [
       "expo-router",
@@ -43,6 +44,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d2b10d22-4d0a-4dad-b319-ae15f39ed29d"
+      }
     }
   }
 }

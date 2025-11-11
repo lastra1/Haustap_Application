@@ -23,6 +23,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/nodemailer": "^7.0.3",
+    "axios": "^1.13.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "expo": "~54.0.20",

@@ -2,56 +2,44 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useAuth } from '../context/AuthContext';
+import { login } from '../../src/services/auth-api';
 
-export default function Login() {
+export default function LogInScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { login, signup } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    // Reset error state
-    setError('');
-
-    // Basic validation
-    if (!email.trim()) {
-      setError('Please enter your email');
+    if (!email || !password) {
+      setError('Please enter both email and password');
       return;
     }
-
-    if (!password.trim()) {
-      setError('Please enter your password');
-      return;
-    }
-
     try {
-      const u = await login(email.trim(), password);
-      // Navigate based on role
-      if (u.role === 'client') router.replace('/client-side');
-      else router.replace('/service-provider');
+      setError('');
+      const userData = await login(email, password);
+      console.log('Login successful:', userData);
+      if (userData.role === 'client') {
+        router.replace('/client-side');
+      } else if (userData.role === 'service-provider' || userData.role === 'provider') {
+        router.replace('/service-provider');
+      } else {
+        router.replace('/client-side'); // Default fallback route
+      }
     } catch (err: any) {
-      setError(err?.message || 'Invalid email or password');
+      const errorMessage = err?.message || 'An error occurred during login';
+      setError(errorMessage);
+      Alert.alert('Login Failed', errorMessage);
     }
-  };
-
-  const handleForgotPassword = () => {
-    Alert.alert('Reset Password', 'Please contact support to reset your password.');
-  };
-
-  const handleSignUp = async () => {
-    // Open the Sign Up form screen instead of auto-creating an account
-    router.push('/signup');
   };
 
   return (
@@ -100,17 +88,20 @@ export default function Login() {
           <Text style={styles.errorText}>{error}</Text>
         ) : null}
 
-        <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
-          <Text style={styles.forgotPasswordText}>By signing up, you agree to our Terms</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        {<TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>Log in</Text>
+        </TouchableOpacity>}
+
+        <TouchableOpacity 
+          style={styles.forgotPassword} 
+          onPress={() => Alert.alert('Not implemented', 'Forgot password flow is not implemented yet.')}
+        >
+          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
 
         <View style={styles.signupContainer}>
           <Text style={styles.signupText}>New to HausTap? </Text>
-          <TouchableOpacity onPress={handleSignUp}>
+          <TouchableOpacity onPress={() => router.push('/signup')}>
             <Text style={styles.signupLink}>Sign Up</Text>
           </TouchableOpacity>
         </View>

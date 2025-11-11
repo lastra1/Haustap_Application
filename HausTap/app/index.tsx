@@ -13,7 +13,7 @@ export default function Index() {
     // Small timeout to avoid navigating during initial mount.
     const t = setTimeout(() => {
       if (!user) {
-        router.replace('/Log-in');
+        router.replace('/auth/log-in');
         return;
       }
 
