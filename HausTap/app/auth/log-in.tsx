@@ -28,11 +28,15 @@ export default function LogInScreen() {
       setError('');
       const userData = await login(email, password);
       console.log('Login successful:', userData);
-      if (userData.role === 'client') {
+
+      if (userData.user.role === 'client') {
         router.replace('/client-side');
-      } else if (userData.role === 'service-provider' || userData.role === 'provider') {
+        console.log('Login as Client');
+      } else if (userData.user.role === 'service-provider' || userData.user.role === 'provider') {
+        console.log('Login as Service Provider');
         router.replace('/service-provider');
       } else {
+        console.log('Login as Client');
         router.replace('/client-side'); // Default fallback route
       }
     } catch (err: any) {

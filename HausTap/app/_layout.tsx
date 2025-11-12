@@ -1,17 +1,16 @@
-import { Stack } from 'expo-router';
-import React from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { AuthProvider } from './context/AuthContext';
+import { Stack } from "expo-router";
+import React from "react";
 
-export default function RootLayout() {
+export default function Layout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
-      </AuthProvider>
-    </GestureHandlerRootView>
+    <Stack
+      screenOptions={{
+        headerShown: false, 
+        contentStyle: { flex: 1},
+      }}
+
+    >
+  
+    </Stack>
   );
 }

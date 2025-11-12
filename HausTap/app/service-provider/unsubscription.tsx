@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 100, // To give space above the footer
+    paddingBottom: 20, // To give space above the footer
   },
   mainQuestion: {
     fontSize: 18,

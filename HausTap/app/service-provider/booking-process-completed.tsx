@@ -1,106 +1,169 @@
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
+import BookingCardFull from "../../components/BookingCardFull";
+import ReportClientModal from "../../components/ReportClientModal";
+import { Booking, bookingStore } from "../../src/services/bookingStore";
 
 
 export default function CompletedDetailsScreen() {
-  const [expanded, setExpanded] = useState(false);
-  const [showFilter, setShowFilter] = useState(false);
-  const [fromDate, setFromDate] = useState<Date>(new Date('2025-10-01'));
-  const [toDate, setToDate] = useState<Date>(new Date('2025-10-31'));
+  const [selectedTab, setSelectedTab] = useState("Completed");
+  const [completedBookings, setCompletedBookings] = useState<Booking[]>([]);
+  const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null);
+
+  // Report modal states
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [selectedBookingForReport, setSelectedBookingForReport] = useState<Booking | null>(null);
+
+  // Filter states (modal)
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [filterFrom, setFilterFrom] = useState<string | null>(null);
+  const [filterTo, setFilterTo] = useState<string | null>(null);
+  const [filterApplied, setFilterApplied] = useState(false);
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
 
-  // sample bookings (replace with real data source)
-  const sampleBookings = [
-    { id: '1', client: 'Jenn Bornilla', date: '2025-10-05', time: '08:00', service: 'Home Cleaning', subtype: 'Bungalow - Basic Cleaning', address: 'B1 L50 Mango st. Phase 1 Saint Joseph Village 10, Barangay Langgam, City of San Pedro, Laguna 4023' },
-    { id: '2', client: 'Alex Cruz', date: '2025-11-02', time: '10:00', service: 'Deep Cleaning', subtype: 'Condo - Deep Clean', address: 'Unit 12, Some Condo, City' },
-  ];
-  const [bookings, setBookings] = useState(sampleBookings);
-  const [filteredBookings, setFilteredBookings] = useState(sampleBookings);
-
-  const formatDate = (d: Date) => {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
-
-  const onChangeFrom = (_event: any, selected?: Date) => {
-    setShowFromPicker(false);
-    if (selected) setFromDate(selected);
-  };
-
-  const onChangeTo = (_event: any, selected?: Date) => {
-    setShowToPicker(false);
-    if (selected) setToDate(selected);
-  };
-
-  const applyFilter = () => {
-    const start = new Date(fromDate);
-    start.setHours(0,0,0,0);
-    const end = new Date(toDate);
-    end.setHours(23,59,59,999);
-    const filtered = bookings.filter(b => {
-      const d = new Date(b.date + 'T00:00:00');
-      return d.getTime() >= start.getTime() && d.getTime() <= end.getTime();
+  useEffect(() => {
+    const unsubscribe = bookingStore.subscribe((updatedBookings: Booking[]) => {
+      const completed = updatedBookings.filter(b => b.status === 'completed');
+      setCompletedBookings(completed);
     });
-    setFilteredBookings(filtered);
-    setShowFilter(false);
+    return () => unsubscribe();
+  }, []);
+
+  // compute displayed list based on filter
+  const displayedBookings = (() => {
+    if (!filterApplied || (!filterFrom && !filterTo)) return completedBookings;
+    try {
+      const from = filterFrom ? new Date(filterFrom) : null;
+      const to = filterTo ? new Date(filterTo) : null;
+      return completedBookings.filter((b) => {
+        const bd = new Date(b.dateTime);
+        if (isNaN(bd.getTime())) return false;
+        if (from && bd < from) return false;
+        if (to && bd > to) return false;
+        return true;
+      });
+    } catch (e) {
+      return completedBookings;
+    }
+  })();
+
+  const handleTabPress = (tab: string) => {
+    setSelectedTab(tab);
+    try {
+      switch (tab) {
+        case "Pending":
+          router.push("/service-provider/before-pending");
+          break;
+        case "Ongoing":
+          router.push("/service-provider/before-ongoing");
+          break;
+        case "Completed":
+          router.push("/service-provider/booking-process-completed");
+          break;
+        case "Cancelled":
+          router.push("/service-provider/booking-process-cancelled");
+          break;
+        case "Return":
+          router.push("/service-provider/booking-process-return");
+          break;
+        default:
+          break;
+      }
+    } catch (e) {
+      console.error("Tab navigation failed", e);
+    }
   };
+
   return (
-    <ScrollView style={styles.container}>
-        {/* Header */}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingHorizontal: 16,
+        paddingTop: 60,
+        paddingBottom: 100,
+      }}
+    >
+      {/* Header with Filter Button */}
       <View style={styles.headerRow}>
         <Text style={styles.headerTitle}>Bookings</Text>
-        <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilter(true)}>
-          <Ionicons name="filter-outline" size={18} color="#000" />
-          <Text style={styles.filterText}>Filter</Text>
+        <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterVisible(true)}>
+          <Ionicons name="filter" size={20} color="#3DC1C6" />
         </TouchableOpacity>
       </View>
 
-      {showFilter && (
-        <View style={styles.filterPanel}>
-          <Text style={styles.filterLabel}>Filter by Date</Text>
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>From:</Text>
-            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowFromPicker(true)}>
-              <Text style={styles.dateBtnText}>{formatDate(fromDate)}</Text>
-            </TouchableOpacity>
-            {showFromPicker && (
-              <DateTimePicker value={fromDate} mode="date" display="default" onChange={onChangeFrom} />
-            )}
-          </View>
+      {/* Filter Modal */}
+      <Modal visible={filterVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Filter by Date</Text>
 
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>Return:</Text>
-            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowToPicker(true)}>
-              <Text style={styles.dateBtnText}>{formatDate(toDate)}</Text>
-            </TouchableOpacity>
-            {showToPicker && (
-              <DateTimePicker value={toDate} mode="date" display="default" onChange={onChangeTo} />
-            )}
-          </View>
+            <View style={{ marginTop: 12, width: '100%' }}>
+              <Text style={styles.modalLabel}>From:</Text>
+              <TouchableOpacity style={styles.dateInput} onPress={() => setShowFromPicker(true)}>
+                <Text style={{ color: filterFrom ? '#000' : '#888' }}>{filterFrom ?? 'YYYY-MM-DD'}</Text>
+              </TouchableOpacity>
+              {showFromPicker && (
+                <DateTimePicker
+                  value={fromDate ?? new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(_e: any, d: Date | undefined) => {
+                    if (d) {
+                      setFromDate(d);
+                      setFilterFrom(d.toISOString().slice(0, 10));
+                    }
+                    if (Platform.OS !== 'ios') setShowFromPicker(false);
+                  }}
+                />
+              )}
+            </View>
 
-          <View style={styles.filterActions}>
-            <TouchableOpacity style={styles.applyBtn} onPress={applyFilter}>
+            <View style={{ marginTop: 12, width: '100%' }}>
+              <Text style={styles.modalLabel}>To:</Text>
+              <TouchableOpacity style={styles.dateInput} onPress={() => setShowToPicker(true)}>
+                <Text style={{ color: filterTo ? '#000' : '#888' }}>{filterTo ?? 'YYYY-MM-DD'}</Text>
+              </TouchableOpacity>
+              {showToPicker && (
+                <DateTimePicker
+                  value={toDate ?? new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(_e: any, d: Date | undefined) => {
+                    if (d) {
+                      setToDate(d);
+                      setFilterTo(d.toISOString().slice(0, 10));
+                    }
+                    if (Platform.OS !== 'ios') setShowToPicker(false);
+                  }}
+                />
+              )}
+            </View>
+
+            <TouchableOpacity style={styles.applyBtn} onPress={() => { setFilterApplied(true); setFilterVisible(false); }}>
               <Text style={styles.applyText}>Apply</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.closeFilterBtn} onPress={() => setShowFilter(false)}>
-              <Text style={styles.closeText}>Close</Text>
+
+            <TouchableOpacity style={styles.clearBtn} onPress={() => { setFilterApplied(false); setFilterFrom(null); setFilterTo(null); setFilterVisible(false); }}>
+              <Text style={styles.clearText}>Clear</Text>
             </TouchableOpacity>
           </View>
         </View>
-      )}
+      </Modal>
 
 
       {/* Tabs */}
@@ -127,109 +190,48 @@ export default function CompletedDetailsScreen() {
       </View>
 
 
-        {/* Booking Card */}
-      <View style={styles.card}>
-        {/* Header */}
-        <View style={styles.cardHeader}>
-          <View>
-            <Text style={styles.clientName}>Client: Jenn Bornilla</Text>
-            <Text style={styles.serviceType}>Home Cleaning</Text>
-            <Text style={styles.subType}>Bungalow - Basic Cleaning</Text>
-          </View>
-          {/* chevron starts down; when expanded rotates to up */}
-          <TouchableOpacity onPress={() => setExpanded((s) => !s)} style={{ padding: 6 }} accessibilityLabel={expanded ? 'Collapse details' : 'Expand details'}>
-            <Ionicons name="chevron-down" size={20} color="#000" style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }} />
-          </TouchableOpacity>
+      {/* Completed Bookings List */}
+      {displayedBookings.length > 0 ? (
+        displayedBookings.map((booking) => (
+          <BookingCardFull
+            key={booking.id}
+            booking={booking}
+            showMoreMenu={showMoreMenu === booking.id}
+            onToggleMoreMenu={() =>
+              setShowMoreMenu(
+                showMoreMenu === booking.id ? null : booking.id
+              )
+            }
+            showFooterButtons={false}
+            showPhotoUpload={false}
+            showProceedButton={false}
+            showPhotosReadOnly={true}
+            showReportButton={true}
+            onReport={() => {
+              setSelectedBookingForReport(booking);
+              setReportModalVisible(true);
+            }}
+          />
+        ))
+      ) : (
+        <View style={styles.emptyState}>
+          <Ionicons name="briefcase-outline" size={64} color="#CCC" />
+          <Text style={styles.emptyText}>No completed bookings</Text>
         </View>
+      )}
 
-
-        {/* Date & Time */}
-        <View style={styles.row}>
-          <View style={styles.half}>
-            <Text style={styles.label}>Date</Text>
-            <Text style={styles.value}>May 21, 2025</Text>
-          </View>
-          <View style={styles.half}>
-            <Text style={styles.label}>Time</Text>
-            <Text style={styles.value}>8:00 AM</Text>
-          </View>
-        </View>
-
-
-        {/* Address */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Address</Text>
-          <Text style={styles.value}>
-            B1 L50 Mango st. Phase 1 Saint Joseph Village 10{"\n"}
-            Barangay Langgam, City of San Pedro, Laguna 4023
-          </Text>
-        </View>
-
-        {/* Expanded details */}
-        {expanded && (
-          <>
-            {/* Selected Package */}
-            <View style={styles.section}>
-              <Text style={styles.label}>Selected:</Text>
-              <Text style={styles.valueBold}>Bungalow 80–150 sqm</Text>
-              <Text style={styles.value}>Basic Cleaning – 1 Cleaner</Text>
-            </View>
-
-            {/* Inclusions */}
-            <View style={styles.section}>
-              <Text style={styles.label}>Inclusions:</Text>
-              <Text style={styles.value}>
-                Living Room: walls, mop, dusting furniture, trash removal,{"\n"}
-                Bedrooms: bed making, sweeping, dusting, trash removal,{"\n"}
-                Hallways: mop & sweep, remove cobwebs,{"\n"}Windows & Mirrors:
-                quick wipe
-              </Text>
-            </View>
-
-            {/* Notes */}
-            <View style={styles.section}>
-              <Text style={styles.label}>Notes:</Text>
-              <TextInput style={styles.notesBox} />
-            </View>
-
-            {/* Voucher Section */}
-            <View style={styles.voucherBox}>
-              <Ionicons name="pricetag-outline" size={20} color="#000" />
-              <Text style={styles.voucherText}>No voucher added</Text>
-            </View>
-
-            {/* Pricing Section */}
-            <View style={styles.section}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.label}>Sub Total</Text>
-                <Text style={styles.value}>₱1,000.00</Text>
-              </View>
-              <View style={styles.rowBetween}>
-                <Text style={styles.label}>Voucher Discount</Text>
-                <Text style={styles.value}>₱0</Text>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.rowBetween}>
-              <Text style={styles.totalLabel}>TOTAL</Text>
-              <Text style={styles.totalValue}>₱1,000.00</Text>
-            </View>
-
-            <Text style={styles.footerNote}>
-              Full payment will be collected directly by the service provider upon
-              completion of the service.
-            </Text>
-
-            {/* Report Button */}
-            <TouchableOpacity style={styles.reportBtn} onPress={() => router.push('/service-provider/report-page')}>
-              <Text style={styles.reportText}>Report Client</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-
+      {/* Report Client Modal */}
+      <ReportClientModal
+        visible={reportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        onSubmit={(reason: string, notes: string) => {
+          console.log(`Report submitted for booking ${selectedBookingForReport?.id}`);
+          console.log(`Reason: ${reason}`);
+          console.log(`Notes: ${notes}`);
+          // TODO: Send report to API
+        }}
+        clientName={selectedBookingForReport?.clientName}
+      />
 
       {/* Bottom Navigation removed */}
     </ScrollView>
@@ -261,6 +263,10 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 13,
     color: "#000",
+  },
+  filterBtn: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   tabs: {
     flexDirection: "row",
@@ -430,4 +436,25 @@ const styles = StyleSheet.create({
   applyText: { color: '#fff', fontWeight: '600' },
   closeFilterBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 6, borderWidth: 1, borderColor: '#CCC' },
   closeText: { color: '#333' },
+  // Modal/filter aliases used by updated UI
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: 320,
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalTitle: { fontSize: 16, fontWeight: '700' },
+  modalLabel: { fontSize: 13, color: '#333', marginBottom: 6 },
+  dateInput: { width: '100%', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 6, padding: 8, backgroundColor: '#fff' },
+  clearBtn: { marginTop: 10, paddingVertical: 8, paddingHorizontal: 20 },
+  clearText: { color: '#666' },
+  emptyState: { justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+  emptyText: { marginTop: 12, fontSize: 16, color: '#999' },
 });

@@ -1,29 +1,9 @@
-import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
-import { useAuth } from './context/AuthContext';
+import { registerRootComponent } from "expo";
+import LogInScreen from "./auth/log-in";
 
-// Entrypoint: decide where to route the user based on auth state.
-export default function Index() {
-  const router = useRouter();
-  const { user, loading } = useAuth();
+export default function App() {
 
-  useEffect(() => {
-    if (loading) return;
-
-    // Small timeout to avoid navigating during initial mount.
-    const t = setTimeout(() => {
-      if (!user) {
-        router.replace('/auth/log-in');
-        return;
-      }
-
-      // Route based on role
-      if (user.role === 'client') router.replace('/client-side');
-      else router.replace('/service-provider');
-    }, 50);
-
-    return () => clearTimeout(t);
-  }, [user, loading]);
-
-  return null;
+  return <LogInScreen />;
 }
+
+registerRootComponent(App);

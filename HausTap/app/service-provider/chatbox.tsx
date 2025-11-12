@@ -70,45 +70,6 @@ export default function ChatsScreen() {
         renderItem={renderItem}
         contentContainerStyle={{ paddingHorizontal: 16 }}
       />
-
-
-      {/* Bottom Navigation */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-around",
-          alignItems: "center",
-          paddingVertical: 10,
-          borderTopWidth: 1,
-          borderTopColor: "#e5e5e5",
-          backgroundColor: "#fff",
-        }}
-      >
-        <TouchableOpacity style={{ alignItems: "center" }} onPress={() => router.push('/service-provider')}>
-          <Ionicons name="home-outline" size={22} color="#555" />
-          <Text style={{ fontSize: 12, color: "#555" }}>Home</Text>
-        </TouchableOpacity>
-
-
-        <TouchableOpacity style={{ alignItems: "center" }} onPress={() => router.push('/service-provider/before-pending')}>
-          <Ionicons name="calendar-outline" size={22} color="#555" />
-          <Text style={{ fontSize: 12, color: "#555" }}>Bookings</Text>
-        </TouchableOpacity>
-
-
-        <TouchableOpacity style={{ alignItems: "center" }}>
-          <Ionicons name="chatbubble" size={22} color="#3DC1C6" />
-          <Text style={{ fontSize: 12, fontWeight: "600", color: "#3DC1C6" }}>
-            Chat
-          </Text>
-        </TouchableOpacity>
-
-
-        <TouchableOpacity style={{ alignItems: "center" }} onPress={() => router.push('/service-provider/my-account')}>
-          <Ionicons name="person-outline" size={22} color="#555" />
-          <Text style={{ fontSize: 12, color: "#555" }}>Profile</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }

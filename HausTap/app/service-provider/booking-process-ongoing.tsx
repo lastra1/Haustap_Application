@@ -90,7 +90,7 @@ export default function OngoingScreen() {
     <View style={styles.page}>
       <ScrollView
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.headerTitle}>Bookings</Text>
@@ -268,26 +268,6 @@ export default function OngoingScreen() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="calendar-outline" size={22} color="#00B0B9" />
-          <Text style={[styles.navText, { color: "#00B0B9" }]}>Bookings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="chatbubble-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="person-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -303,7 +283,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, color: "#666" },
   tabTextActive: { color: "#00B0B9", fontWeight: "600" },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#F5F5F5",
     borderRadius: 10,
     padding: 14,
     marginBottom: 20,
@@ -381,14 +361,7 @@ const styles = StyleSheet.create({
   },
   sliderTrack: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center" },
   slideText: { color: "#666", fontWeight: "600", fontSize: 15 },
-  bottomNav: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#fff",
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderColor: "#ddd",
-  },
-  navItem: { alignItems: "center" },
-  navText: { fontSize: 12, color: "#000", marginTop: 2 },
+  bottomNav: { display: "none" },
+  navItem: { display: "none" },
+  navText: { display: "none" },
 });

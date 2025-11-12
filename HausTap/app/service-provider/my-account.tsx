@@ -1,22 +1,23 @@
 import {
-  AntDesign,
-  Entypo,
-  FontAwesome,
-  Ionicons,
-  MaterialCommunityIcons,
-  MaterialIcons
+    AntDesign,
+    Entypo,
+    FontAwesome,
+    Ionicons,
+    MaterialCommunityIcons,
+    MaterialIcons
 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
+    LayoutAnimation,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    View
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
@@ -29,12 +30,14 @@ if (Platform.OS === 'android') {
 
 export default function App() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, setMode } = useAuth();
   // Dropdown toggle states
   const [showProfile, setShowProfile] = useState(false);
   const [showSkills, setShowSkills] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  // HausTap Partner toggle state
+  const [isHausTapPartner, setIsHausTapPartner] = useState(true);
 
   const toggle = (
     setter: React.Dispatch<React.SetStateAction<boolean>>,
@@ -42,6 +45,15 @@ export default function App() {
   ) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setter(!current);
+  };
+
+  const handlePartnerToggle = async (value: boolean) => {
+    setIsHausTapPartner(value);
+    if (!value) {
+      // Turn off - switch to client mode
+      await setMode('client');
+      router.replace('/client-side');
+    }
   };
 
   return (
@@ -76,6 +88,24 @@ export default function App() {
 
       {/* Light Blue Bar */}
       <View style={styles.highlightBar} />
+
+      {/* HausTap Partner Toggle */}
+      <View style={styles.hausTapPartnerContainer}>
+        <View style={styles.hausTapPartnerContent}>
+          <View style={styles.hausTapPartnerTextContainer}>
+            <Text style={styles.hausTapPartnerTitle}>HausTap Partner</Text>
+            <Text style={styles.hausTapPartnerSubtitle}>
+              {isHausTapPartner ? 'Active' : 'Inactive'}
+            </Text>
+          </View>
+        </View>
+        <Switch
+          value={isHausTapPartner}
+          onValueChange={handlePartnerToggle}
+          trackColor={{ false: '#E0E0E0', true: '#B2DFD8' }}
+          thumbColor={isHausTapPartner ? '#3DC1C6' : '#999'}
+        />
+      </View>
 
       {/* Menu Section */}
       <ScrollView style={styles.menuContainer} showsVerticalScrollIndicator={false}>
@@ -272,6 +302,38 @@ const styles = StyleSheet.create({
   editProfile: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
   editText: { color: 'gray', fontSize: 13, marginLeft: 4 },
   highlightBar: { backgroundColor: '#d6f3fa', height: 20, width: '100%', marginTop: 15 },
+  hausTapPartnerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginHorizontal: 15,
+    marginVertical: 10,
+    backgroundColor: '#F0F8F9',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3DC1C6',
+  },
+  hausTapPartnerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  hausTapPartnerTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  hausTapPartnerTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+  },
+  hausTapPartnerSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
   menuContainer: { flex: 1, paddingHorizontal: 15, marginTop: 10 },
   menuGroup: { marginBottom: 10 },
   menuHeader: { flexDirection: 'row', alignItems: 'center' },

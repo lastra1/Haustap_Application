@@ -69,6 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Fallback mocked credentials
     const client = { email: 'haustapUser@gmail.com', password: '123haustap' };
     const provider = { email: 'haustapProvider@gmail.com', password: '123haustap' };
+    const hybrid = { email: 'carleslie.organo@cdsp.edu.ph', password: 'password', isHausTapPartner: true };
 
     if (email === client.email && password === client.password) {
       const u = { email, role: 'client' as Role };
@@ -78,11 +79,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return u;
     }
 
-    if (email === provider.email && password === provider.password) {
+    if (email === provider.email && password === password) {
       const u = { email, role: 'provider' as Role };
       setUser(u);
       await persist(u, 'provider');
       setModeState('provider');
+      return u;
+    }
+
+    if (email === hybrid.email && password === hybrid.password) {
+      const u = { email, role: 'client' as Role, isHausTapPartner: true };
+      setUser(u);
+      await persist(u, 'client');
+      setModeState('client');
       return u;
     }
 

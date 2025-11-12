@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 100, // Space for the fixed footer button
+    paddingBottom: 20, // Space for the fixed footer button
   },
   sectionTitle: {
     fontSize: 16,

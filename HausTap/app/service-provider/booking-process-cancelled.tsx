@@ -1,24 +1,120 @@
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
+import CancelledBookingCard from "../../components/CancelledBookingCard";
+import { Booking, bookingStore } from "../../src/services/bookingStore";
 
 export default function CancelledScreen() {
   const [expanded, setExpanded] = useState(false);
+  // Filter states (modal) — match Completed screen
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [filterFrom, setFilterFrom] = useState<string | null>(null);
+  const [filterTo, setFilterTo] = useState<string | null>(null);
+  const [filterApplied, setFilterApplied] = useState(false);
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
+  const [showFromPicker, setShowFromPicker] = useState(false);
+  const [showToPicker, setShowToPicker] = useState(false);
+
+  // Cancelled bookings from store
+  const [cancelledBookings, setCancelledBookings] = useState<Booking[]>([]);
+  useEffect(() => {
+    const unsub = bookingStore.subscribe((updated: Booking[]) => {
+      const cancelled = updated.filter((b) => b.status === 'cancelled');
+      setCancelledBookings(cancelled);
+    });
+    return () => unsub();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Header */}
-        <Text style={styles.headerTitle}>Bookings</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Bookings</Text>
+          <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterVisible(true)}>
+            <Ionicons name="filter" size={20} color="#3DC1C6" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Filter Modal (match Completed) */}
+        <Modal visible={filterVisible} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Filter by Date</Text>
+
+              <View style={{ marginTop: 12, width: '100%' }}>
+                <Text style={styles.modalLabel}>From:</Text>
+                <TouchableOpacity style={styles.dateInput} onPress={() => setShowFromPicker(true)}>
+                  <Text style={{ color: filterFrom ? '#000' : '#888' }}>{filterFrom ?? 'YYYY-MM-DD'}</Text>
+                </TouchableOpacity>
+                {showFromPicker && (
+                  <DateTimePicker
+                    value={fromDate ?? new Date()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(_e: any, d: Date | undefined) => {
+                      if (d) {
+                        setFromDate(d);
+                        setFilterFrom(d.toISOString().slice(0, 10));
+                      }
+                      if (Platform.OS !== 'ios') setShowFromPicker(false);
+                    }}
+                  />
+                )}
+              </View>
+
+              <View style={{ marginTop: 12, width: '100%' }}>
+                <Text style={styles.modalLabel}>To:</Text>
+                <TouchableOpacity style={styles.dateInput} onPress={() => setShowToPicker(true)}>
+                  <Text style={{ color: filterTo ? '#000' : '#888' }}>{filterTo ?? 'YYYY-MM-DD'}</Text>
+                </TouchableOpacity>
+                {showToPicker && (
+                  <DateTimePicker
+                    value={toDate ?? new Date()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(_e: any, d: Date | undefined) => {
+                      if (d) {
+                        setToDate(d);
+                        setFilterTo(d.toISOString().slice(0, 10));
+                      }
+                      if (Platform.OS !== 'ios') setShowToPicker(false);
+                    }}
+                  />
+                )}
+              </View>
+
+              <TouchableOpacity style={styles.applyBtn} onPress={() => { setFilterApplied(true); setFilterVisible(false); }}>
+                <Text style={styles.applyText}>Apply</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.clearBtn} onPress={() => { setFilterApplied(false); setFilterFrom(null); setFilterTo(null); setFilterVisible(false); }}>
+                <Text style={styles.clearText}>Clear</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Applied filter summary */}
+        {filterApplied && (
+          <View style={{ marginBottom: 10 }}>
+            <Text style={{ color: "#444", fontSize: 13 }}>
+              Showing results from {filterFrom ?? '-'} to {filterTo ?? '-'}
+            </Text>
+          </View>
+        )}
 
         {/* Tabs */}
         <View style={styles.tabs}>
@@ -53,175 +149,38 @@ export default function CancelledScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Booking Card */}
-        <View style={styles.card}>
-          {/* Card Header with toggle arrow */}
-          <View style={styles.cardHeader}>
-            <View>
-              <Text style={styles.clientName}>Client: Jenn Bornilla</Text>
-              <Text style={styles.serviceType}>Home Cleaning</Text>
-              <Text style={styles.subType}>Bungalow - Basic Cleaning</Text>
-            </View>
+        {/* Cancelled Bookings List (filtered by modal) */}
+        {(() => {
+          const displayed = !filterApplied || (!filterFrom && !filterTo)
+            ? cancelledBookings
+            : cancelledBookings.filter((b) => {
+                const bd = new Date(b.dateTime);
+                if (isNaN(bd.getTime())) return false;
+                const from = filterFrom ? new Date(filterFrom) : null;
+                const to = filterTo ? new Date(filterTo) : null;
+                if (from && bd < from) return false;
+                if (to && bd > to) return false;
+                return true;
+              });
 
-            <TouchableOpacity
-              onPress={() => setExpanded((s) => !s)}
-              style={{ padding: 6 }}
-              accessibilityLabel={expanded ? "Collapse details" : "Expand details"}
-            >
-              <Ionicons
-                name="chevron-down"
-                size={20}
-                color="#000"
-                style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Basic info always visible */}
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Text style={styles.label}>Date</Text>
-              <Text style={styles.value}>May 21, 2025</Text>
-            </View>
-            <View style={styles.half}>
-              <Text style={styles.label}>Time</Text>
-              <Text style={styles.value}>8:00 AM</Text>
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>Address</Text>
-            <Text style={styles.value}>
-              B1 L50 Mango st. Phase 1 Saint Joseph Village 10{"\n"}
-              Barangay Langgam, City of San Pedro, Laguna 4023
-            </Text>
-          </View>
-
-          {/* Show expanded cancellation details when expanded === true */}
-          {expanded && (
-            <>
-              {/* Selected Service */}
-              <View style={styles.section}>
-                <Text style={styles.label}>Selected:</Text>
-                <Text style={styles.value}>
-                  <Text style={{ fontWeight: "600" }}>
-                    Bungalow 80–150 sqm{"\n"}Basic Cleaning – 1 Cleaner
-                  </Text>
-                  {"\n\n"}Inclusions:{"\n"}Living Room: mopping, dusting furniture,
-                  trash removal{"\n"}Bedroom: bed making, mopping, dusting, trash
-                  removal{"\n"}Hallways: mop & sweep, remove cobwebs, Windows &
-                  Mirrors: quick wipe
-                </Text>
+          if (!displayed || displayed.length === 0) {
+            return (
+              <View style={styles.emptyState}>
+                <Ionicons name="briefcase-outline" size={64} color="#CCC" />
+                <Text style={styles.emptyText}>No cancelled bookings</Text>
               </View>
+            );
+          }
 
-              {/* Notes */}
-              <View style={styles.section}>
-                <Text style={styles.label}>Notes:</Text>
-                <TextInput style={styles.notesBox} placeholder=" " />
-              </View>
-
-              {/* Voucher */}
-              <View style={styles.voucherBox}>
-                <Ionicons name="pricetag-outline" size={18} color="#000" />
-                <Text style={styles.voucherText}>No voucher added</Text>
-              </View>
-
-              {/* Total */}
-              <View style={styles.priceSection}>
-                <View style={styles.priceRow}>
-                  <Text style={styles.subLabel}>Sub Total</Text>
-                  <Text style={styles.subValue}>₱1,000.00</Text>
-                </View>
-                <View style={styles.priceRow}>
-                  <Text style={styles.subLabel}>Voucher Discount</Text>
-                  <Text style={styles.subValue}>₱0</Text>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>TOTAL</Text>
-                  <Text style={styles.totalValue}>₱1,000.00</Text>
-                </View>
-                <Text style={styles.noteText}>
-                  All payment shall be collected directly by the service provider upon
-                  completion of service.
-                </Text>
-              </View>
-
-              {/* Blue Divider */}
-              <View style={styles.blueDivider} />
-
-              {/* Cancelled Info */}
-              <View style={styles.cancelledBox}>
-                <View style={styles.cancelledHeader}>
-                  <Text style={styles.cancelledTitle}>CANCELLED</Text>
-                  <Text style={styles.approveTextStatic}>Approve</Text>
-                </View>
-
-                <View style={styles.reasonSection}>
-                  <Text style={styles.reasonLabel}>Reason for Cancellation</Text>
-                  <TextInput
-                    style={styles.reasonInput}
-                    value="No need service"
-                    editable={false}
-                  />
-
-                  <Text style={styles.reasonLabel}>Requested by</Text>
-                  <TextInput
-                    style={styles.reasonInput}
-                    value="Jenn Bornilla"
-                    editable={false}
-                  />
-
-                  <Text style={styles.reasonLabel}>Submission Date</Text>
-                  <TextInput
-                    style={styles.reasonInput}
-                    value="May 04, 2025"
-                    editable={false}
-                  />
-
-                  <Text style={styles.reasonLabel}>Submission Time</Text>
-                  <TextInput
-                    style={styles.reasonInput}
-                    value="12:00 AM"
-                    editable={false}
-                  />
-                </View>
-              </View>
-
-              {/* Buttons removed: Rebook and View Cancellation Details */}
-            </>
-          )}
-        </View>
+          return displayed.map((booking) => (
+            <CancelledBookingCard
+              key={booking.id}
+              booking={booking}
+            />
+          ));
+        })()}
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/service-provider")}
-        >
-          <Ionicons name="home-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="calendar-outline" size={22} color="#00B0B9" />
-          <Text style={[styles.navText, { color: "#00B0B9" }]}>Bookings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/service-provider/chatbox")}
-        >
-          <Ionicons name="chatbubble-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push("/service-provider/my-account")}
-        >
-          <Ionicons name="person-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
@@ -252,7 +211,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, color: "#666" },
   tabTextActive: { color: "#00B0B9", fontWeight: "600" },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#F5F5F5",
     borderRadius: 12,
     padding: 16,
     shadowColor: "#000",
@@ -320,6 +279,44 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
 
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  filterBtn: { flexDirection: "row", alignItems: "center" },
+  filterPanel: { backgroundColor: "#fff", padding: 12, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: "#EEE" },
+  filterTitle: { fontWeight: "700", marginBottom: 8 },
+  filterRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  presetBtn: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6, borderWidth: 1, borderColor: "#EEE", marginRight: 8 },
+  presetActive: { backgroundColor: "#E8F7F8", borderColor: "#00B0B9" },
+  dateRow: { flexDirection: "row", justifyContent: "space-between" },
+  dateBlock: { width: "48%" },
+  datePickerBox: { borderWidth: 1, borderColor: "#DDD", borderRadius: 6, padding: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  datePickerText: { color: "#333" },
+  applyLarge: { backgroundColor: "#00B0B9", paddingVertical: 10, paddingHorizontal: 26, borderRadius: 8 },
+  applyLargeText: { color: "#fff", fontWeight: "700" },
+
+  /* Modal/filter aliases used by updated UI */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: 320,
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalTitle: { fontSize: 16, fontWeight: '700' },
+  modalLabel: { fontSize: 13, color: '#333', marginBottom: 6 },
+  dateInput: { width: '100%', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 6, padding: 8, backgroundColor: '#fff' },
+  applyBtn: { backgroundColor: '#00B0B9', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 6, marginTop: 12 },
+  applyText: { color: '#fff', fontWeight: '600' },
+  clearBtn: { marginTop: 10, paddingVertical: 8, paddingHorizontal: 20 },
+  clearText: { color: '#666' },
+  emptyState: { justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+  emptyText: { marginTop: 12, fontSize: 16, color: '#999' },
+
   cancelledBox: {
     backgroundColor: "#FAFAFA",
     borderRadius: 10,
@@ -366,20 +363,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   detailsText: { color: "#333", fontWeight: "600", fontSize: 13 },
-
-  bottomNav: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#fff",
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderColor: "#ddd",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  navItem: { alignItems: "center" },
-  navText: { fontSize: 12, marginTop: 4 },
+  bottomNav: { display: "none" },
+  navItem: { display: "none" },
+  navText: { display: "none" },
 });
 

@@ -1,6 +1,6 @@
 // ChatScreen.js
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
     KeyboardAvoidingView,
@@ -15,6 +15,10 @@ import {
 
 
 export default function ChatScreen() {
+  const params = useLocalSearchParams();
+  const bookingId = params.bookingId as string | undefined;
+  const clientName = params.clientName as string | undefined;
+  const clientPhone = params.clientPhone as string | undefined;
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -89,7 +93,7 @@ export default function ChatScreen() {
             flex: 1,
           }}
         >
-          Jenn Bornilla
+          {clientName || "Client"}
         </Text>
         <TouchableOpacity>
           <Ionicons name="call-outline" size={22} color="#000" />

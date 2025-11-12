@@ -1,16 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, Clipboard, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function UserReferral() {
     const router = useRouter();
     const [referralCode, setReferralCode] = useState("");
     const userReferralCode = "6AYI6F"; // This would come from your user data/backend
 
-    const copyToClipboard = () => {
-        Clipboard.setString(userReferralCode);
+    const copyToClipboard = async () => {
+        await Clipboard.setStringAsync(userReferralCode);
         // You could show a toast/alert here to confirm copy
+        Alert.alert("Copied", `Referral code ${userReferralCode} copied to clipboard`);
     };
 
     const handleSubmit = () => {

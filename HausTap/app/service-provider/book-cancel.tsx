@@ -2,12 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 
@@ -121,7 +121,7 @@ export default function CancelledScreen() {
           <View style={styles.divider} />
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>TOTAL</Text>
-            <Text style={styles.totalValue}>₱1,000.00</Text>
+            <Text style={styles.totalValue}>P1,000.00</Text>
           </View>
           <Text style={styles.noteText}>
             All payment shall be collected directly by the service provider upon
@@ -178,6 +178,37 @@ export default function CancelledScreen() {
 
 
         {/* Buttons */}
+        {/* Earnings card (placed below booking card, above action buttons) */}
+        <View style={styles.earningsCard}>
+          <View style={styles.earningsHeader}>
+            <Text style={styles.earningsTitle}>Earnings</Text>
+            <TouchableOpacity>
+              <Text style={styles.earningsDetails}>Details</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.earningsBody}>
+            <View style={styles.earnCol}>
+              <Text style={styles.earnLabel}>Total Earnings</Text>
+              <Text style={styles.earnAmount}>₱0</Text>
+
+              <Text style={[styles.earnLabel, { marginTop: 8 }]}>Total Bookings</Text>
+              <Text style={styles.earnAmountSmall}>0</Text>
+
+              <Text style={[styles.earnLabel, { marginTop: 8 }]}>Cancelled Bookings</Text>
+              <Text style={styles.earnAmount}>₱0</Text>
+            </View>
+
+            <View style={styles.earnCol}>
+              <Text style={styles.earnLabel}>Earnings in November</Text>
+              <Text style={styles.earnAmount}>₱0</Text>
+
+              <Text style={[styles.earnLabel, { marginTop: 8 }]}>Completed Bookings</Text>
+              <Text style={styles.earnAmountSmall}>0</Text>
+            </View>
+          </View>
+        </View>
+
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.rebookBtn}>
             <Text style={styles.rebookText}>Rebook</Text>
@@ -189,27 +220,6 @@ export default function CancelledScreen() {
             <Text style={styles.detailsText}>View Cancellation Details</Text>
           </TouchableOpacity>
         </View>
-      </View>
-
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="calendar-outline" size={22} color="#00B0B9" />
-          <Text style={[styles.navText, { color: "#00B0B9" }]}>Bookings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="chatbubble-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="person-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -245,7 +255,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, color: "#666" },
   tabTextActive: { color: "#00B0B9", fontWeight: "600" },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#F5F5F5",
     borderRadius: 12,
     padding: 16,
     shadowColor: "#000",
@@ -361,15 +371,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   detailsText: { color: "#333", fontWeight: "600", fontSize: 13 },
-  bottomNav: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+  bottomNav: { display: "none" },
+  navItem: { display: "none" },
+  navText: { display: "none" },
+  /* Earnings card */
+  earningsCard: {
     backgroundColor: "#fff",
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderColor: "#ddd",
-    marginTop: 30,
+    borderWidth: 1.5,
+    borderColor: "#00B0B9",
+    borderRadius: 12,
+    padding: 12,
+    marginVertical: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
-  navItem: { alignItems: "center" },
-  navText: { fontSize: 12, marginTop: 4 },
+  earningsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  earningsTitle: { fontSize: 16, fontWeight: "700", color: "#222" },
+  earningsDetails: { color: "#00B0B9", fontWeight: "600" },
+  earningsBody: { flexDirection: "row", justifyContent: "space-between" },
+  earnCol: { width: "48%" },
+  earnLabel: { color: "#666", fontSize: 12 },
+  earnAmount: { fontSize: 14, fontWeight: "700", color: "#222", marginTop: 4 },
+  earnAmountSmall: { fontSize: 13, color: "#222", marginTop: 4 },
 });

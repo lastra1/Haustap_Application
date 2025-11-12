@@ -1,4 +1,4 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from 'expo-router';
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -40,37 +40,6 @@ export default function App() {
             </Text>
           </View>
         </View>
-      </View>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/')}>
-          <Ionicons name="home-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push('/service-provider/booking-process-pending')}
-          accessibilityLabel="Bookings"
-        >
-          <Ionicons name="calendar-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Bookings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="chatbubble-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Chat</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => router.push('/service-provider/my-account')}
-          accessibilityLabel="Profile"
-        >
-          <Ionicons name="person-outline" size={22} color="#000" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -117,18 +86,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#CCC",
     marginVertical: 10,
-  },
-  bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#fff",
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderColor: "#ddd",
   },
   navItem: {
     alignItems: "center",
