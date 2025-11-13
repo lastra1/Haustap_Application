@@ -1,60 +1,11 @@
-import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native";
+import MultiSelectList from "../components/MultiSelectList";
 import { hairCategories } from "../data/hair";
 
 export default function HairServicesScreen() {
-  const router = useRouter();
-  
   const services = hairCategories;
-
-  return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Text style={styles.header}>Hair Services</Text>
-        <View style={styles.categoriesContainer}>
-          {services.map((service, index) => {
-            if (service.section === "header") {
-              return (
-                <View key={index} style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>{service.title}</Text>
-                  {service.desc ? (
-                    <Text style={styles.sectionDesc}>{service.desc}</Text>
-                  ) : null}
-                </View>
-              );
-            }
-
-            return (
-              <TouchableOpacity
-                key={index}
-                style={styles.categoryBox}
-                onPress={() =>
-                  router.push({
-                    pathname: "/client-side/booking-summary",
-                    params: {
-                      categoryTitle: service.title,
-                      categoryPrice: service.price,
-                      categoryDesc: service.desc,
-                      service: "Hair Services",
-                      mainCategory: "Beauty Services",
-                      subCategory: "Hair Services",
-                    },
-                  })
-                }
-              >
-                <View style={styles.categoryContent}>
-                  <Text style={styles.categoryTitle}>{service.title}</Text>
-                  <Text style={styles.categoryPrice}>{service.price}</Text>
-                  <Text style={styles.categoryDesc}>{service.desc}</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </ScrollView>
-    </View>
-  );
+  return <MultiSelectList items={services} mainCategory="Beauty Services" serviceName="Hair Services" />;
 }
 
 const styles = StyleSheet.create({

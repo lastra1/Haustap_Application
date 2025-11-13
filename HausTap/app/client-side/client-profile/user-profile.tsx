@@ -83,10 +83,10 @@ export default function UserProfile() {
 						mode="date"
 						display={Platform.OS === 'ios' ? 'spinner' : 'default'}
 						maximumDate={new Date()}
-						onChange={(event, selectedDate) => {
-							setShowDatePicker(Platform.OS === 'ios');
-							if (selectedDate) {
-								setDate(selectedDate);
+						onChange={(event: any, selectedDate?: Date | null) => {
+								setShowDatePicker(Platform.OS === 'ios');
+								if (selectedDate) {
+									setDate(selectedDate);
 								// format dd/mm/yyyy
 								const d = selectedDate;
 								const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;

@@ -14,7 +14,7 @@ import MapView, { Marker } from "react-native-maps";
 
 export default function BookingLocation() {
   const router = useRouter();
-  const { categoryTitle, categoryPrice, categoryDesc, address, mainCategory, subCategory, service } = useLocalSearchParams();
+  const { categoryTitle, categoryPrice, categoryDesc, address, mainCategory, subCategory, service, selectedItems } = useLocalSearchParams();
   const [selectedAddress, setSelectedAddress] = useState("saved");
   const [setAddressText, setSetAddressText] = useState(
     `Blk 1 Lot 50 Mango St. Saint Joseph Village 10\nBrgy. Langgam San Pedro City Laguna`
@@ -127,7 +127,8 @@ export default function BookingLocation() {
               categoryDesc,
               mainCategory,
               subCategory,
-              service
+              service,
+              selectedItems,
             } 
           } as any)}>
             <Text style={styles.editText}>Edit</Text>
@@ -171,6 +172,7 @@ export default function BookingLocation() {
             mainCategory,
             subCategory,
             service,
+            selectedItems,
           }
         } as any)}
       >

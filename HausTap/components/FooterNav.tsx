@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useSegments } from "expo-router";
 import React from "react";
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useAuth } from "../app/context/AuthContext";
 
 export type FooterNavSection = "client" | "provider";
 
@@ -70,13 +71,25 @@ export default function FooterNav({ section }: FooterNavProps) {
         },
       ];
 
+  const { user } = useAuth();
+
+  const handleNav = (route: string, label: string) => {
+    // Guests may browse Home; other tabs require sign-up / login
+    const isHome = label === "Home";
+    if (!user && !isHome) {
+      router.push('/signup' as any);
+      return;
+    }
+    router.push(route as any);
+  };
+
   return (
     <View style={styles.footerNav}>
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.label}
           style={styles.navItem}
-          onPress={() => router.push(tab.route as any)}
+          onPress={() => handleNav(tab.route, tab.label)}
         >
           <Ionicons
             name={tab.icon as any}

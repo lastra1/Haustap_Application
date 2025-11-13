@@ -132,6 +132,7 @@ export default function App() {
             }
 
             const addr = addressStore.addAddress({
+              id: Date.now().toString(),
               houseNumber,
               street,
               barangayName,

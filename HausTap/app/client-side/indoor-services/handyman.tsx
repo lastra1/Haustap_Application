@@ -1,45 +1,10 @@
-import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native";
+import MultiSelectList from "../components/MultiSelectList";
 import { handymanCategories } from "../data/handyman";
 
 export default function HandymanScreen() {
-  const router = useRouter();
-
-  return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Text style={styles.header}>Handyman Services</Text>
-        <View style={styles.categoriesContainer}>
-          {handymanCategories.map((category, index) => (
-            <TouchableOpacity 
-              key={index}
-              style={styles.categoryBox}
-              onPress={() => router.push({
-                pathname: "/client-side/booking-summary",
-                params: { 
-                  categoryTitle: category.title,
-                  categoryDesc: category.desc,
-                  categoryPrice: category.price,
-                  service: "Handyman",
-                  mainCategory: "Indoor Services",
-                  subCategory: "Handyman",
-                }
-              })}
-            >
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryTitle}>{category.title}</Text>
-                {category.price && (
-                  <Text style={styles.categoryPrice}>{category.price}</Text>
-                )}
-                <Text style={styles.categoryDesc}>{category.desc}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
+  return <MultiSelectList items={handymanCategories} mainCategory="Indoor Services" serviceName="Handyman" />;
 }
 
 const styles = StyleSheet.create({

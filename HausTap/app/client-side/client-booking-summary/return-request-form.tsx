@@ -5,6 +5,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
+    Image,
+    Modal,
     ScrollView,
     StyleSheet,
     Text,
@@ -14,11 +16,14 @@ import {
 } from 'react-native';
 
 const RETURN_REASONS = [
-  'Service Not As Described',
-  'Poor Quality',
-  'Incomplete Service',
+  'Service Not Rendered',
   'Wrong Service Provided',
-  'Others',
+  'Unsatisfactory Service Quality',
+  'Overpayment or Incorrect Charges',
+  'Duplicate Booking or Payment',
+  'Cancellation Before Service Date',
+  'Service Provider Unavailable',
+  'System Error or Technical Issue',
 ] as const;
 
 type ReturnReason = typeof RETURN_REASONS[number];
@@ -70,15 +75,30 @@ export default function ReturnRequestForm() {
       }
 
       try {
-        const raw = await AsyncStorage.getItem('HT_bookings');
-        if (!raw) {
-          setError('No bookings found');
-          setLoading(false);
-          return;
+        let found = null;
+
+        // First, try to use bookingData from params if available
+        if (params.bookingData) {
+          try {
+            found = JSON.parse(params.bookingData as string);
+            console.log('Using booking from params:', found);
+          } catch (e) {
+            console.warn('Failed to parse bookingData from params:', e);
+          }
         }
 
-        const bookings = JSON.parse(raw);
-        const found = bookings.find((b: any) => b.id === bookingId);
+        // If not found in params, query AsyncStorage
+        if (!found) {
+          const raw = await AsyncStorage.getItem('HT_bookings');
+          if (!raw) {
+            setError('No bookings found');
+            setLoading(false);
+            return;
+          }
+
+          const bookings = JSON.parse(raw);
+          found = bookings.find((b: any) => b.id === bookingId);
+        }
         
         if (!found) {
           setError('Booking not found');
@@ -112,7 +132,7 @@ export default function ReturnRequestForm() {
     };
 
     loadBooking();
-  }, [bookingId]);
+  }, [bookingId, params.bookingData]);
 
   const handleSubmit = useCallback(async () => {
     if (!selectedReason) {
@@ -237,6 +257,51 @@ export default function ReturnRequestForm() {
             </Text>
             <Ionicons name="chevron-down" size={20} color="#666" />
           </TouchableOpacity>
+
+          <Modal
+            visible={showReasonPicker}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowReasonPicker(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.pickerModal}>
+                <View style={styles.pickerHeader}>
+                  <Text style={styles.pickerHeaderTitle}>Select Return Reason</Text>
+                  <TouchableOpacity onPress={() => setShowReasonPicker(false)}>
+                    <Ionicons name="close" size={24} color="#333" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.pickerList}>
+                  {RETURN_REASONS.map((reason) => (
+                    <TouchableOpacity
+                      key={reason}
+                      style={[
+                        styles.pickerOption,
+                        selectedReason === reason && styles.pickerOptionSelected
+                      ]}
+                      onPress={() => {
+                        setSelectedReason(reason);
+                        setShowReasonPicker(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.pickerOptionText,
+                          selectedReason === reason && styles.pickerOptionTextSelected
+                        ]}
+                      >
+                        {reason}
+                      </Text>
+                      {selectedReason === reason && (
+                        <Ionicons name="checkmark" size={20} color="#3DC1C6" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
 
           <Text style={[styles.label, { marginTop: 20 }]}>Description</Text>
           <TextInput
@@ -514,4 +579,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  pickerModal: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '70%',
+    paddingBottom: 16,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  pickerHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  pickerList: {
+    paddingHorizontal: 0,
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  pickerOptionSelected: {
+    backgroundColor: '#f0f0f0',
+  },
+  pickerOptionText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+  },
+  pickerOptionTextSelected: {
+    fontWeight: '600',
+    color: '#3DC1C6',
+  },
 });
+

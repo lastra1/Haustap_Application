@@ -1,23 +1,33 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useAuth } from "../context/AuthContext";
+import { applianceRepairCategories } from "./data/applianceRepair";
+import { acCleaningCategories, acDeepCleaningCategories, homeCleaningCategories } from "./data/cleaning";
+import { electricalCategories } from "./data/electrical";
+import { hairCategories } from "./data/hair";
+import { handymanCategories } from "./data/handyman";
+import { makeupCategories } from "./data/makeup";
+import { nailCategories } from "./data/nails";
+import { pestControlCategories } from "./data/pestControl";
+import { plumbingCategories } from "./data/plumbing";
 
 export default function BookingSummary() {
   const router = useRouter();
-  const { 
-    categoryTitle, 
-    categoryPrice, 
-    categoryDesc,
-    address,
-    location,
-    date,
-    time,
-    mainCategory,
-    subCategory,
-    service,
-  } = useLocalSearchParams();
+  const params = useLocalSearchParams() as Record<string, any>;
+  const auth = useAuth();
 
-  // If mainCategory/subCategory aren't provided, try to infer mainCategory from the service group
+  const categoryTitle = params.categoryTitle as string | undefined;
+  const categoryPrice = params.categoryPrice as string | undefined;
+  const categoryDesc = params.categoryDesc as string | undefined;
+  const date = params.date as string | undefined;
+  const time = params.time as string | undefined;
+  const mainCategory = params.mainCategory as string | undefined;
+  const subCategory = params.subCategory as string | undefined;
+  const service = params.service as string | undefined;
+  const selectedItemsRaw = params.selectedItems as string | undefined;
+  const voucher = params.voucher as string | undefined;
+
   const serviceToMain: Record<string, string> = {
     Plumbing: "Indoor Services",
     Electrical: "Indoor Services",
@@ -33,76 +43,174 @@ export default function BookingSummary() {
     Mobile: "Tech & Gadget Services",
   };
 
-  const effectiveMainCategory = (mainCategory as string) ?? (service ? (serviceToMain[String(service)] ?? "Main Category") : "Main Category");
-  const effectiveSubCategory = (subCategory as string) ?? (service as string ?? "");
+  const effectiveMainCategory = mainCategory ?? (service ? serviceToMain[service] ?? "Main Category" : "Main Category");
+  const effectiveSubCategory = subCategory ?? service ?? "";
+
+  const priceMap = useMemo(() => {
+    const lists = [
+      ...nailCategories,
+      ...hairCategories,
+      ...makeupCategories,
+      ...handymanCategories,
+      ...plumbingCategories,
+      ...pestControlCategories,
+      ...applianceRepairCategories,
+      ...electricalCategories,
+      ...homeCleaningCategories,
+      ...acCleaningCategories,
+      ...acDeepCleaningCategories,
+    ];
+    const map: Record<string, string> = {};
+    lists.forEach((it: any) => {
+      if (it && it.title && it.price) map[it.title] = it.price;
+    });
+    return map;
+  }, []);
+
+  const parsedSelected = useMemo(() => {
+    if (!selectedItemsRaw) return [] as string[];
+    try {
+      const p = JSON.parse(String(selectedItemsRaw));
+      if (Array.isArray(p)) return p.map(String);
+      if (typeof p === "string") return [p];
+      return [];
+    } catch (e) {
+      return [String(selectedItemsRaw)];
+    }
+  }, [selectedItemsRaw]);
+
+  const parsePriceNumber = (priceStr?: string) => {
+    if (!priceStr) return NaN;
+    const cleaned = String(priceStr).replace(/[^0-9.]/g, "");
+    const v = parseFloat(cleaned);
+    return Number.isFinite(v) ? v : NaN;
+  };
+
+  const subtotal = useMemo(() => {
+    if (parsedSelected.length) {
+      let sum = 0;
+      let any = false;
+      parsedSelected.forEach((t) => {
+        const p = priceMap[t];
+        const n = parsePriceNumber(p);
+        if (!Number.isNaN(n)) {
+          sum += n;
+          any = true;
+        }
+      });
+      if (any) return sum;
+    }
+    const cp = parsePriceNumber(categoryPrice);
+    if (!Number.isNaN(cp)) return cp;
+    return 0;
+  }, [parsedSelected, priceMap, categoryPrice]);
+
+  const transpoFee = 100;
+  const voucherValue = parsePriceNumber(voucher) || 0;
+  const total = Math.max(0, subtotal + transpoFee - voucherValue);
+
+  const handleConfirm = () => {
+    // If guest (not authenticated), send them to signup before they can continue booking
+    if (!auth.user) {
+      router.push('/signup' as any);
+      return;
+    }
+
+    const base =
+      `/client-side/booking-process/booking-location?categoryTitle=${encodeURIComponent(categoryTitle ?? "")}` +
+      `&categoryPrice=${encodeURIComponent(categoryPrice ?? "")}` +
+      `&categoryDesc=${encodeURIComponent(categoryDesc ?? "")}` +
+      `&mainCategory=${encodeURIComponent(mainCategory ?? "")}` +
+      `&subCategory=${encodeURIComponent(subCategory ?? "")}` +
+      (service ? `&service=${encodeURIComponent(service)}` : "") +
+      (selectedItemsRaw ? `&selectedItems=${encodeURIComponent(String(selectedItemsRaw))}` : "");
+
+    router.push(base as any);
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Booking Summary</Text>
 
       <View style={styles.summaryBox}>
-        {/* Service Details Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Service Details</Text>
           <View style={styles.divider} />
-          
+
           <Text style={styles.label}>Service Category:</Text>
           <View style={styles.categoryHierarchyColumn}>
             <Text style={styles.mainCategory}>{effectiveMainCategory}</Text>
-            <Text style={styles.subcategoryLine}>{effectiveSubCategory ? `${effectiveSubCategory} - ${categoryTitle ?? ""}` : (categoryTitle ?? "")}</Text>
+            <Text style={styles.subcategoryLine}>{effectiveSubCategory ? `${effectiveSubCategory} - ${categoryTitle ?? ""}` : categoryTitle ?? ""}</Text>
           </View>
 
-          {categoryPrice && (
+          {categoryPrice ? (
             <>
               <Text style={styles.label}>Price:</Text>
               <Text style={styles.valuePrice}>{categoryPrice}</Text>
             </>
-          )}
+          ) : null}
 
           <Text style={styles.label}>Inclusions:</Text>
           <Text style={styles.desc}>{categoryDesc}</Text>
         </View>
 
-        {/* Location Section removed per design request */}
+        {parsedSelected.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Selected Services</Text>
+            <View style={styles.divider} />
+            {parsedSelected.map((t, i) => (
+              <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                <Text style={{ color: "#222", fontSize: 16 }}>{t}</Text>
+                <Text style={{ color: "#00ADB5", fontSize: 16 }}>{priceMap[t] ?? "Price varies"}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
-        {/* Schedule Section */}
-        {(date || time) && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Payment Summary</Text>
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <Text style={styles.label}>Sub Total</Text>
+            <Text style={styles.valuePrice}>{`₱${subtotal.toFixed(2)}`}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Transpo fee</Text>
+            <Text style={styles.valuePrice}>{`₱${transpoFee.toFixed(2)}`}</Text>
+          </View>
+          {voucherValue > 0 ? (
+            <View style={styles.row}>
+              <Text style={styles.label}>Voucher</Text>
+              <Text style={[styles.valuePrice, { color: "#D9534F" }]}>{`- ₱${voucherValue.toFixed(2)}`}</Text>
+            </View>
+          ) : null}
+          <View style={[styles.row, { marginTop: 8 }]}> 
+            <Text style={[styles.label, { fontSize: 18 }]}>TOTAL</Text>
+            <Text style={[styles.valuePrice, { fontSize: 20 }]}>{`₱${total.toFixed(2)}`}</Text>
+          </View>
+        </View>
+
+        {(date || time) ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Schedule Details</Text>
             <View style={styles.divider} />
-            
-            {date && (
+            {date ? (
               <>
                 <Text style={styles.label}>Service Date:</Text>
                 <Text style={styles.value}>{date}</Text>
               </>
-            )}
-            
-            {time && (
+            ) : null}
+            {time ? (
               <>
                 <Text style={styles.label}>Service Time:</Text>
                 <Text style={styles.value}>{time}</Text>
               </>
-            )}
+            ) : null}
           </View>
-        )}
+        ) : null}
       </View>
 
-      <TouchableOpacity
-        style={styles.nextButton}
-        onPress={() =>
-          router.push((
-            `/client-side/booking-process/booking-location?categoryTitle=${encodeURIComponent(
-              (categoryTitle as string) || ""
-            )}&categoryPrice=${encodeURIComponent(
-              ((categoryPrice as string) || "")
-            )}&categoryDesc=${encodeURIComponent(((categoryDesc as string) || ""))}` +
-            `&mainCategory=${encodeURIComponent(((mainCategory as string) || ""))}` +
-            `&subCategory=${encodeURIComponent(((subCategory as string) || ""))}` +
-            (service ? `&service=${encodeURIComponent(String(service))}` : ``)
-          ) as any)
-        }
-      >
+      <TouchableOpacity style={styles.nextButton} onPress={handleConfirm}>
         <Text style={styles.nextButtonText}>Confirm Booking</Text>
       </TouchableOpacity>
 
@@ -121,7 +229,6 @@ const styles = StyleSheet.create({
   },
   categoryHierarchy: {
     marginTop: 8,
-    // used previously for a horizontal breadcrumb; replaced by column layout
   },
   categoryPath: {
     fontSize: 14,
@@ -222,4 +329,5 @@ const styles = StyleSheet.create({
     fontSize: 16, 
     fontWeight: "600" 
   },
+  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
 });

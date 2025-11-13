@@ -1,77 +1,42 @@
-import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native";
+import MultiSelectList from "../components/MultiSelectList";
+
+const packages = [
+  {
+    title: "Basic Care Package",
+    price: "₱1,000",
+    desc: "Inclusions:\n1:1 lash application for a natural look\nLightweight and comfortable for daily wear\nEnhances length and curl without heavy volume",
+  },
+  {
+    title: "Glam Essentials Package",
+    price: "₱2,200",
+    desc: "Inclusions:\nCombination of classic and volume lash techniques\nFuller and more textured effect\nBalanced style for both natural and glam looks",
+  },
+  {
+    title: "Event Ready Package",
+    price: "₱3,500",
+    desc: "Inclusions:\n3D–6D lash fans applied for dramatic volume\nCreates a glamorous, eye-catching effect\nIdeal for clients who prefer bold lashes",
+  },
+  {
+    title: "Bridal Radiance Package",
+    price: "₱8,000",
+    desc: "Inclusions:\nMultiple ultra-fine lash fans for extra density\nIntense, dramatic lash look\nBest for special occasions or high-glam styles",
+  },
+  {
+    title: "Mani + Pedi Combo",
+    price: "₱500",
+    desc: "Inclusions:\nLifts and curls natural lashes from the root\nTint adds depth and mascara-like effect\nLasts several weeks with low maintenance",
+  },
+  {
+    title: "Gel Mani + Pedi Combo",
+    price: "₱1,300",
+    desc: "Inclusions:\nExtensions applied to bottom lashes\nEnhances definition and balance to eye look\nComplements upper lash extensions",
+  },
+];
 
 export default function PackagesScreen() {
-  const router = useRouter();
-
-  const packages = [
-    {
-      title: "Basic Care Package",
-      price: "₱1,000",
-      desc: "Inclusions:\n1:1 lash application for a natural look\nLightweight and comfortable for daily wear\nEnhances length and curl without heavy volume",
-    },
-    {
-      title: "Glam Essentials Package",
-      price: "₱2,200",
-      desc: "Inclusions:\nCombination of classic and volume lash techniques\nFuller and more textured effect\nBalanced style for both natural and glam looks",
-    },
-    {
-      title: "Event Ready Package",
-      price: "₱3,500",
-      desc: "Inclusions:\n3D–6D lash fans applied for dramatic volume\nCreates a glamorous, eye-catching effect\nIdeal for clients who prefer bold lashes",
-    },
-    {
-      title: "Bridal Radiance Package",
-      price: "₱8,000",
-      desc: "Inclusions:\nMultiple ultra-fine lash fans for extra density\nIntense, dramatic lash look\nBest for special occasions or high-glam styles",
-    },
-    {
-      title: "Mani + Pedi Combo",
-      price: "₱500",
-      desc: "Inclusions:\nLifts and curls natural lashes from the root\nTint adds depth and mascara-like effect\nLasts several weeks with low maintenance",
-    },
-    {
-      title: "Gel Mani + Pedi Combo",
-      price: "₱1,300",
-      desc: "Inclusions:\nExtensions applied to bottom lashes\nEnhances definition and balance to eye look\nComplements upper lash extensions",
-    },
-  ];
-
-  return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Text style={styles.header}>Packages</Text>
-        <View style={styles.categoriesContainer}>
-          {packages.map((pkg, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.categoryBox}
-              onPress={() =>
-                router.push({
-                  pathname: "/client-side/booking-summary",
-                  params: {
-                    categoryTitle: pkg.title,
-                    categoryPrice: pkg.price,
-                    categoryDesc: pkg.desc,
-                    service: "Lashes Package",
-                    mainCategory: "Beauty Services",
-                    subCategory: "Packages",
-                  },
-                })
-              }
-            >
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryTitle}>{pkg.title}</Text>
-                <Text style={styles.categoryPrice}>{pkg.price}</Text>
-                <Text style={styles.categoryDesc}>{pkg.desc}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
+  return <MultiSelectList items={packages} mainCategory="Beauty Services" serviceName="Packages" />;
 }
 
 const styles = StyleSheet.create({

@@ -3,23 +3,26 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Image,
-  PanResponder,
-  PanResponderGestureState,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Animated,
+    Image,
+    Modal,
+    PanResponder,
+    PanResponderGestureState,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function OngoingScreen() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [beforePhoto, setBeforePhoto] = useState<string | null>(null);
   const [afterPhoto, setAfterPhoto] = useState<string | null>(null);
+  const [agreement, setAgreement] = useState(false);
+  const [showAgreementModal, setShowAgreementModal] = useState(false);
   const pan = useRef(new Animated.Value(0)).current;
 
   // ✅ Request permission for gallery access
@@ -60,6 +63,17 @@ export default function OngoingScreen() {
       pan.setValue(newValue);
     },
     onPanResponderRelease: (_, gesture: PanResponderGestureState) => {
+      // Require agreement before allowing slide-to-complete
+      if (!agreement) {
+        Animated.spring(pan, {
+          toValue: 0,
+          useNativeDriver: true,
+          friction: 8,
+          tension: 40,
+        }).start();
+        Alert.alert('Agreement required', 'Please accept the Service Agreement before marking as completed.');
+        return;
+      }
       const maxSlide = 240;
       const threshold = maxSlide * 0.8;
 
@@ -251,6 +265,17 @@ export default function OngoingScreen() {
 
           {/* ✅ Slide Button with Navigation */}
           <View style={styles.sliderContainer}>
+            <View style={styles.agreementBlock}>
+              <TouchableOpacity style={styles.checkboxRow} onPress={() => {
+                if (!agreement) setShowAgreementModal(true);
+                else setAgreement(false);
+              }}>
+                <View style={[styles.checkboxBox, agreement && styles.checkboxChecked]}>
+                  {agreement && <Ionicons name="checkmark" size={14} color="#fff" />}
+                </View>
+                <Text style={styles.agreementText}>Service Agreement</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.sliderTrack}>
               <Text style={styles.slideText}>
                 {isCompleted ? "Service Completed!" : "Slide to mark as completed"}
@@ -268,6 +293,64 @@ export default function OngoingScreen() {
           </View>
         </View>
       </ScrollView>
+        {/* Agreement Modal for providers */}
+        <Modal
+          visible={showAgreementModal}
+          animationType="fade"
+          transparent
+          onRequestClose={() => {
+            // Android back button -> accept and close
+            setShowAgreementModal(false);
+            setAgreement(true);
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalCardHeader}>
+                <Text style={styles.modalCardTitle}>HAUSTAP BOOKING SERVICE AGREEMENT</Text>
+                <TouchableOpacity onPress={() => { setShowAgreementModal(false); setAgreement(true); }}>
+                  <Ionicons name="close" size={20} color="#666" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView contentContainerStyle={styles.modalCardBody}>
+                <Text style={styles.modalText}>
+                  (Applicable to both Client and Service Provider){"\n\n"}
+                  1. Scope and Acknowledgment{"\n"}
+                  - By proceeding with a booking through the Haustap platform, both the Client and Service Provider acknowledge and agree to comply with the terms stated in this Service Agreement.{"\n\n"}
+                  - This agreement serves as a mutual understanding of responsibilities, service scope, and conduct throughout the booking process — from confirmation to completion.{"\n\n"}
+                  2. Additional Services During Inspection{"\n"}
+                  If the Client requests additional service(s) during the inspection, the following applies:{"\n"}
+                  a. The original inspection fee (if any) will be waived.{"\n"}
+                  b. The Client will only be charged the service fee for the additional service(s).{"\n\n"}
+                  3. Outside Transactions{"\n"}
+                  - Haustap shall not be held liable for any transactions, agreements, or activities conducted outside the Haustap platform.{"\n\n"}
+                  4. Accuracy of Booking Details{"\n"}
+                  - All information entered in the booking form must be true, accurate, and complete.{"\n\n"}
+                  5. Communication{"\n"}
+                  - Both the Client and Service Provider must communicate clearly and respectfully regarding any concerns through Haustap’s messaging or contact channels.{"\n\n"}
+                  6. Transportation Fee{"\n"}
+                  - A Transportation Fee is charged to cover the Service Provider’s travel cost to and from the service location. This fee is visible upon booking confirmation and is included in the total bill.{"\n\n"}
+                  7. Payments{"\n"}
+                  - All payments are strictly handled in cash between the Client and the Service Provider after the service is completed.{"\n\n"}
+                  8. Cancellation Policy{"\n"}
+                  - Clients may cancel a booking only while it is in “Pending” status. Once the booking is “Ongoing,” the Client no longer has the right to cancel.{"\n\n"}
+                  9. Ongoing Service{"\n"}
+                  - The Service Provider must upload photo evidence (before and after) of the service performed.{"\n\n"}
+                  10. Completion and Reporting{"\n"}
+                  - When marking a booking as “Completed,” both the Client and Service Provider confirm that the report or feedback submitted is true and fair.{"\n\n"}
+                  Haustap reserves the right to determine the severity of each case based on the frequency and nature of non-compliance.
+                </Text>
+              </ScrollView>
+
+              <View style={styles.modalCardFooter}>
+                <TouchableOpacity style={styles.modalCardClose} onPress={() => { setShowAgreementModal(false); setAgreement(true); }}>
+                  <Text style={styles.modalCloseText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
     </View>
   );
 }
@@ -364,4 +447,116 @@ const styles = StyleSheet.create({
   bottomNav: { display: "none" },
   navItem: { display: "none" },
   navText: { display: "none" },
+  /* Agreement & modal styles */
+  agreementBlock: {
+    width: '100%',
+    marginBottom: 8,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkboxBox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1,
+    borderColor: '#CCC',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  checkboxChecked: {
+    backgroundColor: '#00ADB5',
+    borderColor: '#00ADB5',
+  },
+  agreementText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  modalHeader: {
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalContent: {
+    padding: 16,
+  },
+  modalText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+  modalFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  modalCloseBtn: {
+    alignSelf: 'flex-end',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  modalCloseText: {
+    color: '#00ADB5',
+    fontWeight: '700',
+  },
+  modalFooterRow: {
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  modalAgreeBtn: {
+    backgroundColor: '#00ADB5',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+  },
+  modalAgreeText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 520,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  modalCardHeader: {
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalCardTitle: { fontSize: 14, fontWeight: '700' },
+  modalCardBody: { padding: 14, maxHeight: 440 },
+  modalCardFooter: { padding: 12, borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'flex-end' },
+  modalCardClose: { paddingVertical: 8, paddingHorizontal: 12 },
 });

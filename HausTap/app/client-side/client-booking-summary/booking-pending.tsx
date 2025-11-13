@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // Example bookings shown when no real bookings exist yet
 const mockBookings = [
@@ -32,6 +33,23 @@ export default function BookingPending() {
   // bookings state — start with mock until AsyncStorage loads real ones
   const [bookings, setBookings] = useState<typeof mockBookings>(mockBookings);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [moreMenuId, setMoreMenuId] = useState<string | null>(null);
+  const [cancelModalBookingId, setCancelModalBookingId] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState<string | null>(null);
+  const [cancelOtherText, setCancelOtherText] = useState<string>('');
+  const [cancelDescription, setCancelDescription] = useState<string>('');
+
+  const cancelReasons = [
+    'Change of Schedule',
+    'Service No Longer Needed',
+    'Incorrect Booking Details',
+    'Price Concerns',
+    'Payment Issues',
+    'Health/Safety Concerns',
+    'Service Provider Unavailable',
+    'Emergency/Personal Reasons',
+    'Other/s:'
+  ];
 
   // helper to parse price-like values
   const parsePrice = (p: any) => {
@@ -106,16 +124,110 @@ export default function BookingPending() {
             <TouchableOpacity activeOpacity={0.85} onPress={() => setExpandedId(expanded ? null : b.id)}>
               <View style={styles.cardHeaderRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.mainCategory}>{b.mainCategory}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={styles.mainCategory}>{b.mainCategory}</Text>
+                    <TouchableOpacity style={{ marginLeft: 8 }} onPress={() => {
+                      // Try to open dialer to the provider if phone available on data
+                      // mock data doesn't include a phone number; show an alert for now
+                      Alert.alert('Call', 'Open dialer to contact the service provider.');
+                    }}>
+                      <Ionicons name="call-outline" size={18} color="#007AFF" />
+                    </TouchableOpacity>
+                  </View>
                   <Text style={styles.subcategory}>{b.subCategory}</Text>
-                  <Text style={styles.bookingId}>Booking ID: {b.id}</Text>
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={styles.priceText}>₱{b.total.toFixed(2)}</Text>
+                <View style={{ alignItems: 'flex-end', minWidth: 100 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={styles.bookingIdHeader}>{b.id}</Text>
+                    <TouchableOpacity
+                      style={{ marginLeft: 8 }}
+                      onPress={async () => {
+                        try {
+                          await Clipboard.setStringAsync(b.id);
+                          Alert.alert('Copied', `Booking ID ${b.id} copied to clipboard`);
+                        } catch (err) {
+                          console.warn('Failed to copy booking id', err);
+                        }
+                      }}
+                    >
+                      <Ionicons name="copy-outline" size={16} color="#00B0B9" />
+                    </TouchableOpacity>
+                  </View>
                   <Text style={styles.chev}>{expanded ? '▲' : '▼'}</Text>
                 </View>
               </View>
             </TouchableOpacity>
+
+            {/* Collapsed preview: show date/time, address (short), notes preview, total and More button */}
+            {!expanded && (
+              <View>
+                <View style={styles.divider} />
+                <View style={styles.rowSmall}>
+                  <View style={styles.rowCol}>
+                    <Text style={styles.metaLabel}>Date</Text>
+                    <Text style={styles.metaValue}>{b.date}</Text>
+                  </View>
+                  <View style={styles.vertSeparator} />
+                  <View style={styles.rowCol}>
+                    <Text style={styles.metaLabel}>Time</Text>
+                    <Text style={styles.metaValue}>{b.time}</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.addressBox, { marginTop: 12 }]}> 
+                  <Text style={styles.metaLabel}>Address</Text>
+                  <Text style={styles.addressText} numberOfLines={1}>{b.address}</Text>
+                </View>
+
+                <View style={{ marginTop: 12 }}>
+                  <Text style={styles.metaLabel}>Notes:</Text>
+                  <Text style={[styles.notesInput, { minHeight: 40 }]} numberOfLines={2}>{b.notes || '—'}</Text>
+                </View>
+
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>TOTAL</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(Math.max(0, parsePrice(b.total) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
+                </View>
+
+                <View style={styles.footerRow}>
+                  <View style={{ position: 'relative' }}>
+                    <TouchableOpacity
+                      style={styles.moreBtn}
+                      onPress={() => setMoreMenuId(moreMenuId === b.id ? null : b.id)}
+                    >
+                      <Text style={styles.moreText}>More</Text>
+                    </TouchableOpacity>
+
+                    {moreMenuId === b.id && (
+                      <View style={styles.moreMenu}>
+                        <TouchableOpacity
+                          style={styles.moreMenuItem}
+                          onPress={() => {
+                            setMoreMenuId(null);
+                            Alert.alert('Contact SP', 'Opening dialer to contact the service provider.');
+                          }}
+                        >
+                          <Text style={styles.moreMenuText}>Contact SP</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.moreMenuItem}
+                          onPress={() => {
+                            setMoreMenuId(null);
+                            setCancelModalBookingId(b.id);
+                            setCancelReason(null);
+                            setCancelOtherText('');
+                            setCancelDescription('');
+                          }}
+                        >
+                          <Text style={[styles.moreMenuText, { color: '#D9534F' }]}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </View>
+            )}
 
             {expanded && (
               <View>
@@ -174,23 +286,54 @@ export default function BookingPending() {
                   </View>
                 </View>
 
+                <View style={[styles.totalsRow, { marginTop: 6 }]}> 
+                  <Text style={styles.smallLabel}>Transpo fee</Text>
+                  <Text style={styles.smallLabel}>+₱100.00</Text>
+                </View>
+
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>TOTAL</Text>
-                  <Text style={styles.totalValue}>{formatCurrency(Math.max(0, parsePrice(b.total) - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
+                  <Text style={styles.totalValue}>{formatCurrency(Math.max(0, parsePrice(b.total) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
                 </View>
 
                 <Text style={styles.payNote}>Full payment will be collected directly by the service provider upon completion of the service.</Text>
 
-                <View style={styles.footerRow}> 
-                  <TouchableOpacity 
-                    style={styles.cancelBtn} 
-                    onPress={() => router.push({
-                      pathname: '/client-side/client-booking-summary/cancel-booking-form',
-                      params: { bookingId: b.id }
-                    } as any)}
-                  >
-                    <Text style={styles.cancelText}>Cancel</Text>
-                  </TouchableOpacity>
+                <View style={styles.footerRow}>
+                  <View style={{ position: 'relative' }}>
+                    <TouchableOpacity
+                      style={styles.moreBtn}
+                      onPress={() => setMoreMenuId(moreMenuId === b.id ? null : b.id)}
+                    >
+                      <Text style={styles.moreText}>More</Text>
+                    </TouchableOpacity>
+
+                    {moreMenuId === b.id && (
+                      <View style={styles.moreMenu}>
+                        <TouchableOpacity
+                          style={styles.moreMenuItem}
+                          onPress={() => {
+                            setMoreMenuId(null);
+                            Alert.alert('Contact SP', 'Opening dialer to contact the service provider.');
+                          }}
+                        >
+                          <Text style={styles.moreMenuText}>Contact SP</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.moreMenuItem}
+                          onPress={() => {
+                            setMoreMenuId(null);
+                            setCancelModalBookingId(b.id);
+                            setCancelReason(null);
+                            setCancelOtherText('');
+                            setCancelDescription('');
+                          }}
+                        >
+                          <Text style={[styles.moreMenuText, { color: '#D9534F' }]}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                 </View>
               </View>
             )}
@@ -198,6 +341,78 @@ export default function BookingPending() {
         );
       })}
       </ScrollView>
+
+      {/* Cancel Modal (inline) */}
+      <Modal
+        visible={!!cancelModalBookingId}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCancelModalBookingId(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setCancelModalBookingId(null)}>
+                <Text style={styles.backArrow}>←</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Cancel booking</Text>
+              <View style={{ width: 32 }} />
+            </View>
+
+            <Text style={styles.modalSubtitle}>Why are you requesting to cancel your booking?</Text>
+
+            <Text style={[styles.modalLabel, { marginTop: 8 }]}>Reason:</Text>
+            <ScrollView style={{ maxHeight: 260 }}>
+              {cancelReasons.map((r) => {
+                const selected = cancelReason === r || (r === 'Other/s:' && cancelReason === 'Other/s:');
+                return (
+                  <TouchableOpacity
+                    key={r}
+                    style={[styles.reasonItem, selected && styles.reasonItemSelected]}
+                    onPress={() => setCancelReason(r)}
+                  >
+                    <Text style={[styles.reasonText, selected && { fontWeight: '700' }]}>{r}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+
+              {cancelReason === 'Other/s:' && (
+                <TextInput
+                  style={styles.otherInput}
+                  placeholder="Other reason"
+                  value={cancelOtherText}
+                  onChangeText={setCancelOtherText}
+                />
+              )}
+            </ScrollView>
+
+            <Text style={[styles.modalLabel, { marginTop: 12 }]}>Description:</Text>
+            <TextInput
+              style={styles.descriptionInput}
+              multiline
+              value={cancelDescription}
+              onChangeText={setCancelDescription}
+              placeholder=""
+            />
+
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={() => {
+                // Compose reason text
+                const reasonText = cancelReason === 'Other/s:' ? cancelOtherText : (cancelReason || '');
+                // Navigate to cancel form with params to preserve existing flow
+                router.push({
+                  pathname: '/client-side/client-booking-summary/cancel-booking-form',
+                  params: { bookingId: cancelModalBookingId, reason: reasonText, description: cancelDescription }
+                } as any);
+                setCancelModalBookingId(null);
+              }}
+            >
+              <Text style={styles.submitButtonText}>Submit</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Footer provided by layout */}
     </View>
@@ -213,7 +428,8 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: '#fff' },
   tabText: { color: '#666' },
   tabTextActive: { color: '#3DC1C6', fontWeight: '700' },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#E0E0E0' },
+  card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#E0E0E0',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 12, elevation: 10 },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   mainCategory: { fontSize: 18, fontWeight: '700' },
   subcategory: { fontSize: 14, color: '#666', marginTop: 6 },
@@ -249,6 +465,26 @@ const styles = StyleSheet.create({
   cancelText: { color: '#666', fontWeight: '600' },
   viewBtn: { backgroundColor: '#3DC1C6', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6 },
   viewText: { color: '#fff', fontWeight: '700' },
+  bookingIdHeader: { fontSize: 13, color: '#333', fontWeight: '700' },
+  moreBtn: { backgroundColor: '#eee', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6 },
+  moreText: { color: '#333', fontWeight: '700' },
+  moreMenu: { position: 'absolute', right: 12, top: '100%', marginTop: 4, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8, paddingVertical: 6, width: 140, zIndex: 99, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 5 },
+  moreMenuItem: { paddingVertical: 10, paddingHorizontal: 12 },
+  moreMenuText: { fontSize: 14, color: '#333' },
   // footer handled by layout
   pageContainer: { flex: 1, backgroundColor: '#fff' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#fff', padding: 16, borderTopLeftRadius: 12, borderTopRightRadius: 12, maxHeight: '90%' },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  backArrow: { fontSize: 20, color: '#333' },
+  modalTitle: { fontSize: 18, fontWeight: '700' },
+  modalSubtitle: { fontSize: 12, color: '#666', marginBottom: 8 },
+  modalLabel: { fontSize: 14, color: '#333' },
+  reasonItem: { paddingVertical: 12, paddingHorizontal: 8, borderWidth: 1, borderColor: '#EFEFEF', borderRadius: 6, marginTop: 8 },
+  reasonItemSelected: { borderColor: '#3DC1C6', backgroundColor: '#F0FFFE' },
+  reasonText: { fontSize: 14, color: '#333' },
+  otherInput: { borderWidth: 1, borderColor: '#EAEAEA', borderRadius: 6, padding: 10, marginTop: 8 },
+  descriptionInput: { borderWidth: 1, borderColor: '#EAEAEA', borderRadius: 6, padding: 10, height: 100, marginTop: 8 },
+  submitButton: { backgroundColor: '#3DC1C6', paddingVertical: 12, borderRadius: 8, marginTop: 12, alignItems: 'center' },
+  submitButtonText: { color: '#fff', fontWeight: '700' },
 });

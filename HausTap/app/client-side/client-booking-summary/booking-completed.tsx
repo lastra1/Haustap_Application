@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Example completed booking shown when no stored completed bookings exist
 const mockCompleted = [
@@ -22,8 +23,8 @@ const mockCompleted = [
     total: 1000,
     desc: 'Basic Cleaning — living room, kitchen, bedroom, mopping, dusting.',
     notes: '',
-    voucherCode: '',
-    voucherValue: 0,
+    voucherCode: 'Referral Voucher',
+    voucherValue: 10,
     status: 'completed',
     completedAt: new Date().toISOString(), // Add timestamp when booking is completed
     isRated: false,
@@ -76,24 +77,27 @@ export default function BookingCompleted() {
   const formatCurrency = (v: number) => '₱' + v.toFixed(2);
 
   const handleRate = (bookingId: string) => {
+    const booking = bookings.find(b => b.id === bookingId);
     router.push({ 
       pathname: '/client-side/client-booking-summary/rate-service-form',
-      params: { bookingId }
+      params: { bookingId, bookingData: JSON.stringify(booking) }
     } as any);
   };
 
   const handleReturn = (bookingId: string) => {
+    const booking = bookings.find(b => b.id === bookingId);
     router.push({ 
       pathname: '/client-side/client-booking-summary/return-request-form',
-      params: { bookingId }
+      params: { bookingId, bookingData: JSON.stringify(booking) }
     } as any);
     setShowMoreOptions(null);
   };
 
   const handleReport = (bookingId: string) => {
+    const booking = bookings.find(b => b.id === bookingId);
     router.push({ 
       pathname: '/client-side/client-booking-summary/report-form',
-      params: { bookingId }
+      params: { bookingId, bookingData: JSON.stringify(booking) }
     } as any);
     setShowMoreOptions(null);
   };
@@ -211,50 +215,97 @@ export default function BookingCompleted() {
               <TouchableOpacity activeOpacity={0.85} onPress={() => setExpandedId(expanded ? null : b.id)}>
                 <View style={styles.cardHeaderRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.mainCategory}>{b.mainCategory}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={styles.mainCategory}>{b.mainCategory}</Text>
+                      <TouchableOpacity style={{ marginLeft: 8 }} onPress={() => {
+                        Alert.alert('Call', 'Open dialer to contact the service provider.');
+                      }}>
+                        <Ionicons name="call-outline" size={18} color="#007AFF" />
+                      </TouchableOpacity>
+                    </View>
                     <Text style={styles.subcategory}>{b.subCategory}</Text>
-                    <Text style={styles.bookingId}>Booking ID: {b.id}</Text>
                   </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.priceText}>{formatCurrency(Number(b.total || 0))}</Text>
+                  <View style={{ alignItems: 'flex-end', minWidth: 90 }}>
+                    {b.id && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={styles.bookingIdHeader}>{b.id}</Text>
+                        <TouchableOpacity style={{ marginLeft: 8 }} onPress={async () => {
+                          try { await Clipboard.setStringAsync(b.id); Alert.alert('Copied', `Booking ID ${b.id} copied to clipboard`); } catch (e) { console.warn(e); }
+                        }}>
+                          <Ionicons name="copy-outline" size={16} color="#00B0B9" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                     <Text style={styles.chev}>{expanded ? '▲' : '▼'}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
 
               {!expanded && (
-                <View style={[styles.actionRow, { marginTop: 12 }]}>
-                  {!b.isRated && (
-                    <TouchableOpacity 
-                      style={[styles.actionButton, styles.rateButton]} 
-                      onPress={() => handleRate(b.id)}
-                    >
-                      <Text style={styles.rateButtonText}>Rate</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity 
-                    style={[styles.actionButton, styles.moreButton]} 
-                    onPress={() => setShowMoreOptions(showMoreOptions === b.id ? null : b.id)}
-                  >
-                    <Text style={styles.moreButtonText}>More</Text>
-                  </TouchableOpacity>
-
-                  {showMoreOptions === b.id && (
-                    <View style={styles.moreOptionsPopup}>
-                      <TouchableOpacity
-                        style={styles.moreOption}
-                        onPress={() => handleReturn(b.id)}
-                      >
-                        <Text style={styles.moreOptionText}>Return</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.moreOption}
-                        onPress={() => handleReport(b.id)}
-                      >
-                        <Text style={styles.moreOptionText}>Report</Text>
-                      </TouchableOpacity>
+                <View>
+                  <View style={styles.divider} />
+                  <View style={styles.rowSmall}>
+                    <View style={styles.rowCol}>
+                      <Text style={styles.metaLabel}>Date</Text>
+                      <Text style={styles.metaValue}>{b.date}</Text>
                     </View>
-                  )}
+                    <View style={styles.vertSeparator} />
+                    <View style={styles.rowCol}>
+                      <Text style={styles.metaLabel}>Time</Text>
+                      <Text style={styles.metaValue}>{b.time}</Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.addressBox, { marginTop: 12 }]}> 
+                    <Text style={styles.metaLabel}>Address</Text>
+                    <Text style={styles.addressText} numberOfLines={1}>{b.address}</Text>
+                  </View>
+
+                  <View style={{ marginTop: 12 }}>
+                    <Text style={styles.metaLabel}>Notes:</Text>
+                    <Text style={[styles.notesInput, { minHeight: 40 }]} numberOfLines={2}>{b.notes || '—'}</Text>
+                  </View>
+
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>TOTAL</Text>
+                    <Text style={styles.totalValue}>{formatCurrency(Math.max(0, Number(b.total || 0) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
+                  </View>
+
+                  <View style={[styles.actionRow, { marginTop: 12 }]}>
+                    {!b.isRated && (
+                      <TouchableOpacity 
+                        style={[styles.actionButton, styles.rateButton]} 
+                        onPress={() => handleRate(b.id)}
+                      >
+                        <Text style={styles.rateButtonText}>Rate</Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.moreButton]} 
+                      onPress={() => setShowMoreOptions(showMoreOptions === b.id ? null : b.id)}
+                    >
+                      <Text style={styles.moreButtonText}>More</Text>
+                    </TouchableOpacity>
+
+                    {showMoreOptions === b.id && (
+                      <View style={styles.moreOptionsPopup}>
+                        <TouchableOpacity
+                          style={styles.moreOption}
+                          onPress={() => handleReturn(b.id)}
+                        >
+                          <Text style={styles.moreOptionText}>Return</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.moreOption}
+                          onPress={() => handleReport(b.id)}
+                        >
+                          <Text style={styles.moreOptionText}>Report</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+
+                  <Text style={styles.reminderText}>Reminder: You may request a return for free within 24 hours after the service. After 24 hours, a ₱300 return fee will be charged.</Text>
                 </View>
               )}
 
@@ -292,6 +343,19 @@ export default function BookingCompleted() {
                     </View>
                   </View>
 
+                  {/* Referral Voucher row */}
+                  <View style={styles.voucherRowOverview}>
+                    <View style={styles.voucherLeft}>
+                      <Ionicons name="pricetag-outline" size={18} color="#333" style={{ marginRight: 8 }} />
+                      <Text style={styles.voucherText}>{b.voucherCode ? b.voucherCode : 'Add Referral Voucher'}</Text>
+                      {b.voucherValue ? (
+                        <View style={styles.voucherBadge}>
+                          <Text style={styles.voucherBadgeText}>{formatCurrency(Number(b.voucherValue))}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
+
                   <View style={styles.totalsRow}>
                     <View>
                       <Text style={styles.smallLabel}>Sub Total</Text>
@@ -303,9 +367,14 @@ export default function BookingCompleted() {
                     </View>
                   </View>
 
+                  <View style={[styles.totalsRow, { marginTop: 6 }]}> 
+                    <Text style={styles.smallLabel}>Transpo fee</Text>
+                    <Text style={styles.smallLabel}>+₱100.00</Text>
+                  </View>
+
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>TOTAL</Text>
-                    <Text style={styles.totalValue}>{formatCurrency(Math.max(0, Number(b.total || 0) - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
+                    <Text style={styles.totalValue}>{formatCurrency(Math.max(0, Number(b.total || 0) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
                   </View>
                   
                   <Text style={styles.payNote}>Full payment will be collected directly by the service provider upon completion of the service.</Text>
@@ -399,7 +468,20 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: '#fff' },
   tabText: { color: '#666' },
   tabTextActive: { color: '#3DC1C6', fontWeight: '700' },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#E0E0E0', marginHorizontal: 16 },
+  card: { 
+    backgroundColor: '#fff', 
+    borderRadius: 8, 
+    padding: 12, 
+    marginBottom: 12, 
+    borderWidth: 1, 
+    borderColor: '#E0E0E0', 
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 10,
+  },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   mainCategory: { fontSize: 18, fontWeight: '700' },
   subcategory: { fontSize: 14, color: '#666', marginTop: 6 },
@@ -418,6 +500,11 @@ const styles = StyleSheet.create({
   inclusions: { fontSize: 13, color: '#666', marginTop: 8 },
   notesInput: { backgroundColor: '#f9f9f9', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#EAEAEA' },
   notesText: { fontSize: 13, color: '#666' },
+  voucherRowOverview: { backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#E0E0E0', paddingVertical: 8, paddingHorizontal: 12, marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  voucherLeft: { flexDirection: 'row', alignItems: 'center' },
+  voucherText: { fontSize: 14, color: '#333' },
+  voucherBadge: { backgroundColor: '#00ADB5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginLeft: 8 },
+  voucherBadgeText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   bookingId: { fontSize: 12, color: '#666', marginTop: 4 },
   smallLabel: { fontSize: 13, color: '#666' },
   totalsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
@@ -491,7 +578,7 @@ const styles = StyleSheet.create({
     marginTop: 4, // Add some space between button and popup
   },
   reminderText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#666',
     textAlign: 'center',
     marginTop: 16,
@@ -507,6 +594,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  bookingIdHeader: { fontSize: 13, color: '#333', fontWeight: '700' },
 
   // footer handled by layout
 });

@@ -1,19 +1,35 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  PanResponder,
-  PanResponderGestureState,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Animated,
+    PanResponder,
+    PanResponderGestureState,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 
 export default function BookingsScreen() {
+  const [bookings, setBookings] = useState<any[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('HT_bookings');
+        const all = raw ? JSON.parse(raw) : [];
+        const pending = Array.isArray(all) ? all.filter((b: any) => b.status === 'pending') : [];
+        if (mounted) setBookings(pending);
+      } catch (err) {
+        console.warn('Failed to load bookings', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
   const [isAccepted, setIsAccepted] = useState(false);
   const pan = useRef(new Animated.Value(0)).current;
   const [sliderWidth, setSliderWidth] = useState(0);
@@ -123,131 +139,72 @@ export default function BookingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Booking Card */}
-        <View style={styles.card}>
-          {/* Header */}
-          <View style={styles.cardHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.clientName}>
-                <Text style={{ fontWeight: "700" }}>Client:</Text> Jenn Bornilla
-              </Text>
-              <Text style={styles.serviceTitle}>Home Cleaning</Text>
-              <Text style={styles.serviceSubtitle}>Bungalow - Basic Cleaning</Text>
-            </View>
-            <Ionicons name="chevron-down" size={20} color="#000" />
-          </View>
-
-          {/* Date & Time */}
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Text style={styles.label}>Date</Text>
-              <Text style={styles.value}>May 21, 2025</Text>
-            </View>
-            <View style={styles.half}>
-              <Text style={styles.label}>Time</Text>
-              <Text style={styles.value}>8:00 AM</Text>
-            </View>
-          </View>
-
-          {/* Address */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Address</Text>
-            <Text style={styles.value}>
-              B1 L50 Mango St. Phase 1 Saint Joseph Village 10{"\n"}
-              Barangay Langgam, City of San Pedro, Laguna 4023
-            </Text>
-          </View>
-
-          {/* Selected Section */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Selected:</Text>
-            <Text style={styles.valueBold}>Bungalow 80–150 sqm</Text>
-            <Text style={styles.value}>Basic Cleaning – 1 Cleaner</Text>
-          </View>
-
-          {/* Inclusions */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Inclusions:</Text>
-            <Text style={styles.value}>
-              Living Room: walls, mop, dusting furniture, trash removal{"\n"}
-              Bedrooms: bed making, sweeping, dusting, trash removal{"\n"}
-              Hallways: mop & sweep, remove cobwebs{"\n"}
-              Windows & Mirrors: quick wipe
-            </Text>
-          </View>
-
-          {/* Notes */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Notes:</Text>
-            <TextInput style={styles.textArea} placeholder="Enter notes..." multiline />
-          </View>
-
-          {/* Voucher */}
-          <View style={styles.voucherBox}>
-            <Ionicons name="pricetag-outline" size={18} color="#666" />
-            <Text style={styles.voucherText}>No voucher added</Text>
-          </View>
-
-          {/* Price Section */}
-          <View style={styles.priceSection}>
-            <View style={styles.rowBetween}>
-              <Text style={styles.subLabel}>Sub Total</Text>
-              <Text style={styles.subAmount}>₱1,000.00</Text>
-            </View>
-            <View style={styles.rowBetween}>
-              <Text style={styles.subLabel}>Voucher Discount</Text>
-              <Text style={styles.subAmount}>₱0</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.rowBetween}>
-              <Text style={styles.totalLabel}>TOTAL</Text>
-              <Text style={styles.totalAmount}>₱1,000.00</Text>
-            </View>
-          </View>
-
-          {/* Info Note */}
-          <Text style={styles.noteInfo}>
-            Full payment will be collected directly by the service provider upon completion of the service.
-          </Text>
-
-          {/* Accept Booking */}
-          <View style={styles.acceptBox}>
-            <Text style={styles.acceptTitle}>Accept Booking?</Text>
-            <Text style={styles.acceptSubtitle}>Be the first one to accept</Text>
-
-            {/* Slide Button */}
-            <View
-              style={styles.sliderContainer}
-              {...(panResponderRef.current ? panResponderRef.current.panHandlers : {})}
-              onLayout={(e) => setSliderWidth(e.nativeEvent.layout.width)}
-            >
-              <View style={styles.sliderTrack}>
-                <Text style={styles.sliderText}>
-                  {isAccepted ? "Booking Arrived!" : "Slide to Mark as Arrived"}
-                </Text>
+        {/* Booking Cards */}
+        {bookings.length === 0 ? (
+          <Text style={{ padding: 20, color: '#666' }}>No pending bookings</Text>
+        ) : (
+          bookings.map((b) => (
+            <View key={b.id} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.clientName}><Text style={{ fontWeight: '700' }}>Client:</Text> {b.clientName ?? 'Client'}</Text>
+                  <Text style={styles.serviceTitle}>{b.mainCategory}</Text>
+                  <Text style={styles.serviceSubtitle}>{b.subCategory} - {b.serviceTitle}</Text>
+                </View>
+                <Ionicons name="chevron-down" size={20} color="#000" />
               </View>
-              <Animated.View
-                style={[
-                  styles.slider,
-                  { transform: [{ translateX: pan }] },
-                ]}
-              >
-                <Ionicons name="arrow-forward" size={24} color="#fff" />
-              </Animated.View>
-            </View>
 
-            {/* Cancel Button */}
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancel}
-              disabled={isCancelling}
-            >
-              <Text style={styles.cancelText}>
-                {isCancelling ? "Cancelling..." : "Cancel"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              <View style={styles.row}>
+                <View style={styles.half}>
+                  <Text style={styles.label}>Date</Text>
+                  <Text style={styles.value}>{b.date}</Text>
+                </View>
+                <View style={styles.half}>
+                  <Text style={styles.label}>Time</Text>
+                  <Text style={styles.value}>{b.time}</Text>
+                </View>
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.label}>Address</Text>
+                <Text style={styles.value}>{b.address}</Text>
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.label}>Selected:</Text>
+                {Array.isArray(b.selectedItems) && b.selectedItems.length ? (
+                  b.selectedItems.map((s: string, idx: number) => (
+                    <Text key={idx} style={styles.value}>{s}</Text>
+                  ))
+                ) : (
+                  <Text style={styles.value}>{b.serviceTitle}</Text>
+                )}
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.label}>Inclusions:</Text>
+                <Text style={styles.value}>{b.desc}</Text>
+              </View>
+
+              <View style={styles.priceSection}>
+                <View style={styles.rowBetween}>
+                  <Text style={styles.subLabel}>Sub Total</Text>
+                  <Text style={styles.subAmount}>₱{(b.subtotal ?? 0).toFixed ? (b.subtotal).toFixed(2) : String(b.subtotal)}</Text>
+                </View>
+                <View style={styles.rowBetween}>
+                  <Text style={styles.subLabel}>Voucher Discount</Text>
+                  <Text style={styles.subAmount}>₱{(b.voucherValue ?? 0).toFixed ? (b.voucherValue).toFixed(2) : String(b.voucherValue)}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.rowBetween}>
+                  <Text style={styles.totalLabel}>TOTAL</Text>
+                  <Text style={styles.totalAmount}>₱{(b.total ?? 0).toFixed ? (b.total).toFixed(2) : String(b.total)}</Text>
+                </View>
+              </View>
+
+            </View>
+          ))
+        )}
       </ScrollView>
     </View>
   );

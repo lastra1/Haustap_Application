@@ -2,16 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import React, { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -27,6 +27,7 @@ export default function HausTap() {
   const [year, setYear] = useState("");
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [acceptedPolicies, setAcceptedPolicies] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
   
   // Form fields
@@ -46,23 +47,61 @@ export default function HausTap() {
   const [generatedOtp, setGeneratedOtp] = useState(""); // In a real app, this would come from the backend
 
   const validateForm = () => {
+    // Basic required fields
     if (!firstName || !lastName || !email || !mobileNumber || !password || !confirmPassword) {
       alert("Please fill in all required fields");
       return false;
     }
 
+    // Password match
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       return false;
     }
 
+    // Password length minimum
+    if ((password || "").length < 6) {
+      alert('Password must be at least 6 characters long');
+      return false;
+    }
+
+    // Email basic format
     if (!email.includes("@") || !email.includes(".")) {
       alert("Please enter a valid email address");
       return false;
     }
 
-    if (!month || !day || !year) {
+    // Mobile number: must be exactly 11 digits
+    if (!/^\d{11}$/.test(mobileNumber)) {
+      alert('Mobile number must be 11 digits (numbers only)');
+      return false;
+    }
+
+    // Birthdate completeness
+    const mm = Number(month);
+    const dd = Number(day);
+    const yy = Number(year);
+    if (!mm || !dd || !yy) {
       alert("Please enter your complete birthdate");
+      return false;
+    }
+
+    // Construct DOB and validate
+    const dob = new Date(yy, mm - 1, dd);
+    if (isNaN(dob.getTime())) {
+      alert('Please enter a valid birthdate');
+      return false;
+    }
+
+    // Calculate age
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age -= 1;
+    }
+    if (age < 18) {
+      alert('You must be at least 18 years old to sign up.');
       return false;
     }
 
@@ -182,8 +221,8 @@ const generateNewOtp = async () => {
 
   const handleSignUp = async () => {
     if (validateForm()) {
-      setShowEmailVerification(true);
-      await generateNewOtp(); // Generate OTP and start timer when modal opens
+      // Show Terms & Agreement modal first; when user agrees we'll continue to OTP
+      setShowTerms(true);
     }
   };
 
@@ -205,10 +244,10 @@ const generateNewOtp = async () => {
           <View style={styles.box}>
             <Text style={styles.boxTitle}>Sign Up</Text>
 
-            {/* Full Name Section */}
+            {/* Full Name Section (no M.I.) */}
             <View style={styles.rowContainer}>
-              <View style={styles.flex2}>
-                <Text style={styles.label}>First Name</Text>
+              <View style={styles.flex1}>
+                <Text style={styles.label}>First Name <Text style={{ color: 'red' }}>*</Text></Text>
                 <TextInput 
                   style={styles.input} 
                   placeholder="First Name"
@@ -216,8 +255,8 @@ const generateNewOtp = async () => {
                   onChangeText={setFirstName}
                 />
               </View>
-              <View style={styles.flex2}>
-                <Text style={styles.label}>Last Name</Text>
+              <View style={styles.flex1}>
+                <Text style={styles.label}>Last Name <Text style={{ color: 'red' }}>*</Text></Text>
                 <TextInput 
                   style={styles.input} 
                   placeholder="Last Name"
@@ -225,25 +264,14 @@ const generateNewOtp = async () => {
                   onChangeText={setLastName}
                 />
               </View>
-              <View style={styles.flex1}>
-                <Text style={styles.label}>M.I.</Text>
-                <TextInput
-                  style={styles.input}
-                  maxLength={1}
-                  autoCapitalize="characters"
-                  placeholder="M.I."
-                  value={middleInitial}
-                  onChangeText={setMiddleInitial}
-                />
-              </View>
             </View>
 
             {/* Birthdate */}
+            <Text style={styles.label}>Birthdate <Text style={{ color: 'red' }}>*</Text></Text>
             <View style={styles.rowContainer}>
               <View style={styles.flex1}>
-                <Text style={styles.label}>Birthdate</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, styles.birthInput]}
                   placeholder="MM"
                   keyboardType="numeric"
                   maxLength={2}
@@ -256,9 +284,9 @@ const generateNewOtp = async () => {
                   value={month}
                 />
               </View>
-              <View style={styles.flex1}>
+              <View style={[styles.flex1, styles.birthSpacer]}>
                 <TextInput
-                  style={[styles.input, styles.noLabel]}
+                  style={[styles.input, styles.birthInput]}
                   placeholder="DD"
                   keyboardType="numeric"
                   maxLength={2}
@@ -271,9 +299,9 @@ const generateNewOtp = async () => {
                   value={day}
                 />
               </View>
-              <View style={styles.flex2}>
+              <View style={styles.flex1}>
                 <TextInput
-                  style={[styles.input, styles.noLabel]}
+                  style={[styles.input, styles.birthInput]}
                   placeholder="YYYY"
                   keyboardType="numeric"
                   maxLength={4}
@@ -290,7 +318,7 @@ const generateNewOtp = async () => {
             </View>
 
             {/* Email */}
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>Email <Text style={{ color: 'red' }}>*</Text></Text>
             <TextInput 
               style={styles.input} 
               keyboardType="email-address"
@@ -300,16 +328,17 @@ const generateNewOtp = async () => {
             />
 
             {/* Mobile Number */}
-            <Text style={styles.label}>Mobile Number</Text>
+            <Text style={styles.label}>Mobile Number <Text style={{ color: 'red' }}>*</Text></Text>
             <TextInput 
               style={styles.input} 
               keyboardType="phone-pad"
               value={mobileNumber}
-              onChangeText={setMobileNumber}
+              onChangeText={(t) => setMobileNumber(String(t).replace(/\D/g, '').slice(0, 11))}
+              maxLength={11}
             />
 
             {/* Password */}
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>Password <Text style={{ color: 'red' }}>*</Text></Text>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.passwordInput}
@@ -327,7 +356,7 @@ const generateNewOtp = async () => {
             </View>
 
             {/* Confirm Password */}
-            <Text style={styles.label}>Confirm Password</Text>
+            <Text style={styles.label}>Confirm Password <Text style={{ color: 'red' }}>*</Text></Text>
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.passwordInput}
@@ -351,20 +380,9 @@ const generateNewOtp = async () => {
               <Text style={styles.buttonText}>Sign Up</Text>
             </TouchableOpacity>
 
-            <Text style={styles.agreement}>By signing up, you agree to HausTap's</Text>
-
-            <View style={styles.termsContainer}>
-              <TouchableOpacity onPress={() => setShowTerms(true)}>
-                <Text style={styles.link}>Terms & Conditions</Text>
-              </TouchableOpacity>
-              <Text style={styles.separator}> | </Text>
-              <TouchableOpacity onPress={() => setShowPrivacy(true)}>
-                <Text style={styles.link}>Privacy Policy</Text>
-              </TouchableOpacity>
-            </View>
 
             <Text style={styles.footerText}>
-              Already have an account? <Text style={styles.link}>Log In</Text>
+              Already have an account? <Text style={styles.link} onPress={() => router.push('/auth/log-in')}>Log In</Text>
             </Text>
 
             <View style={styles.line} />
@@ -432,15 +450,79 @@ const generateNewOtp = async () => {
               8. COMMUNICATION CONSENT{"\n"}
               By creating a HausTap account, you consent to receive booking updates, notifications, and important alerts via SMS, email, or in-app messages. You may disable promotional messages anytime.{"\n\n"}
               9. AMENDMENTS{"\n"}
-              HausTap reserves the right to update or modify these Terms at any time. Continued use of the platform means you accept the updated Terms.
+              HausTap reserves the right to update or modify these Terms at any time. Continued use of the platform means you accept the updated Terms.{"\n\n"}
+
+              Privacy Policy{"\n\n"}
+              Last Updated: October 2025{"\n\n"}
+              This Privacy Policy explains how HausTap ("we", "our", or "the Platform") collects, uses, stores, and protects your personal information when you create an account or use our services. By using HausTap, you confirm that you have read and understood this Privacy Policy.{"\n\n"}
+              1. INFORMATION WE COLLECT{"\n"}
+              We only collect information that is necessary for account creation, booking, and communication, including:{"\n"}
+              • Full Name{"\n"}
+              • Email Address & Mobile Number (for OTP verification and notifications){"\n"}
+              • Location/Address (for service booking and provider matching){"\n"}
+              • Booking history and feedback{"\n\n"}
+              We do not collect or store payment card details because all payments are done in cash directly to the service provider.{"\n\n"}
+              2. HOW WE USE YOUR INFORMATION{"\n\n"}
+              Your data is used solely for platform operations, including:{"\n"}
+              • Account registration and OTP identity verification{"\n"}
+              • Sending booking confirmations and service notifications{"\n"}
+              • Matching you with nearby verified service providers{"\n"}
+              • Improving platform security and service experience{"\n"}
+              • Providing support and resolving concerns{"\n\n"}
+              3. SHARING OF INFORMATION{"\n"}
+              HausTap respects your privacy and will not sell or disclose your personal data to unauthorized third parties. However, we may share limited information with:{"\n"}
+              • Verified Service Providers only for booking and coordination{"\n"}
+              • Legal authorities when required by law or for security purposes{"\n\n"}
+              4. DATA SECURITY{"\n"}
+              We implement reasonable security measures, including:{"\n"}
+              • OTP verification and secure login access{"\n"}
+              • Restricted access to sensitive data{"\n"}
+              • Monitoring for suspicious or fraudulent activity{"\n\n"}
+              5. YOUR RIGHTS AS A USER{"\n"}
+              You have the right to:{"\n"}
+              • Update or correct your information{"\n"}
+              • Request account deletion (subject to verification and pending transactions){"\n"}
+              • Decline promotional messages (but essential system alerts cannot be disabled){"\n\n"}
+              Requests may be sent through HausTap's official support channels.{"\n\n"}
+              6. DATA RETENTION{"\n"}
+              Your data will be stored only as long as necessary for your account usage, legal compliance, or dispute resolution. Terminated accounts may be securely archived or permanently deleted as needed.{"\n\n"}
+              7. POLICY UPDATES{"\n"}
+              HausTap may update this Privacy Policy at any time to improve safety and compliance. You will be notified of major changes. Continued use of the platform confirms your acceptance.{"\n\n"}
+              8. CONTACT INFORMATION{"\n"}
+              For any questions, support, or privacy-related concerns, you may reach us through our official communication channels: Email, Facebook, or Instagram.{"\n\n"}
             </Text>
           </ScrollView>
-          <TouchableOpacity
-            style={styles.modalButton}
-            onPress={() => setShowTerms(false)}
-          >
-            <Text style={styles.buttonText}>Close</Text>
-          </TouchableOpacity>
+
+          <View style={styles.checkboxContainer}>
+            <TouchableOpacity
+              onPress={() => setAcceptedPolicies(!acceptedPolicies)}
+              style={[styles.checkbox, acceptedPolicies ? styles.checkboxChecked : {}]}
+            >
+              {acceptedPolicies ? <Ionicons name="checkmark" size={16} color="#fff" /> : null}
+            </TouchableOpacity>
+
+            <Text style={styles.checkboxLabel}>
+              I, the undersigned, confirm that I have read, understood, and agree to the Terms & Conditions and the Privacy Policy set forth by HausTap.
+            </Text>
+          </View>
+          <View style={styles.agreeButtonContainer}>
+            <TouchableOpacity
+              disabled={!acceptedPolicies}
+              style={[styles.agreeButton, !acceptedPolicies ? styles.agreeButtonDisabled : {}]}
+              onPress={() => {
+                if (!acceptedPolicies) {
+                  alert('Please confirm that you have read and agree to the Terms & Privacy Policy.');
+                  return;
+                }
+                // proceed to OTP flow
+                setShowTerms(false);
+                setShowEmailVerification(true);
+                void generateNewOtp();
+              }}
+            >
+              <Text style={styles.buttonText}>Agree</Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </Modal>
 
@@ -619,13 +701,21 @@ const styles = StyleSheet.create({
   logo: {
     width: 120,
     height: 120,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   box: {
-    backgroundColor: "#f2f2f2",
-    borderRadius: 10,
-    padding: 20,
-    width: "100%",
+    backgroundColor: "#ececec",
+    borderRadius: 18,
+    padding: 22,
+    width: "92%",
+    maxWidth: 420,
+    alignSelf: 'center',
+    // subtle shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 4,
   },
   boxTitle: {
     fontSize: 20,
@@ -641,12 +731,19 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#d9d9d9",
     borderRadius: 8,
-    height: 45,
+    height: 44,
     paddingHorizontal: 12,
     fontSize: 14,
     marginBottom: 10,
+  },
+  birthInput: {
+    textAlign: 'center',
+    paddingVertical: 4,
+  },
+  birthSpacer: {
+    marginHorizontal: 6,
   },
   inputContainer: {
     flexDirection: "row",
@@ -664,18 +761,20 @@ const styles = StyleSheet.create({
   rowContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 15,
+    marginBottom: 14,
     gap: 8,
   },
   flex1: { flex: 1 },
   flex2: { flex: 2 },
   noLabel: { marginTop: 22 },
   button: {
-    backgroundColor: "#3DC1C6",
-    borderRadius: 10,
+    backgroundColor: "#00ADB5",
+    borderRadius: 24,
     paddingVertical: 12,
     alignItems: "center",
-    marginTop: 5,
+    marginTop: 12,
+    width: '64%',
+    alignSelf: 'center',
   },
   buttonAlt: {
     backgroundColor: "#3DC1C6",
@@ -724,5 +823,58 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: "center",
     margin: 16,
+  },
+  modalCancelButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: '#3DC1C6',
+    borderColor: '#3DC1C6',
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: 13,
+    color: '#333',
+    lineHeight: 18,
+  },
+  agreeButtonContainer: {
+    paddingHorizontal: 16,
+    alignItems: 'flex-end',
+    marginBottom: 20,
+  },
+  agreeButton: {
+    backgroundColor: '#00ADB5',
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    minWidth: 90,
+    alignItems: 'center',
+  },
+  agreeButtonDisabled: {
+    backgroundColor: '#9fd1d2',
   },
 });

@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
+import Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Example cancelled booking shown when no stored cancelled bookings exist
 const mockCancelled = [
@@ -21,8 +22,8 @@ const mockCancelled = [
     total: 1000,
     desc: 'Basic Cleaning — living room, kitchen, bedroom, mopping, dusting.',
     notes: '',
-    voucherCode: '',
-    voucherValue: 0,
+    voucherCode: 'Referral Voucher',
+    voucherValue: 10,
     status: 'cancelled',
     cancelledAt: new Date().toISOString(),
     cancellationReason: 'Change of Schedule',
@@ -129,16 +130,60 @@ export default function BookingCancelled() {
               <TouchableOpacity activeOpacity={0.85} onPress={() => setExpandedId(expanded ? null : b.id)}>
                 <View style={styles.cardHeaderRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.mainCategory}>{b.mainCategory}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={styles.mainCategory}>{b.mainCategory}</Text>
+                    </View>
                     <Text style={styles.subcategory}>{b.subCategory}</Text>
-                    <Text style={styles.bookingId}>Booking ID: {b.id}</Text>
                   </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.priceText}>{formatCurrency(b.total)}</Text>
+                  <View style={{ alignItems: 'flex-end', minWidth: 90 }}>
+                    {b.id && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={styles.bookingIdHeader}>{b.id}</Text>
+                        <TouchableOpacity style={{ marginLeft: 8 }} onPress={async () => {
+                          try { await Clipboard.setStringAsync(b.id); Alert.alert('Copied', `Booking ID ${b.id} copied to clipboard`); } catch (e) { console.warn(e); }
+                        }}>
+                          <Ionicons name="copy-outline" size={16} color="#00B0B9" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                     <Text style={styles.chev}>{expanded ? '▲' : '▼'}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
+
+              {!expanded && (
+                <View>
+                  <View style={styles.divider} />
+                  <View style={styles.rowSmall}>
+                    <View style={styles.rowCol}>
+                      <Text style={styles.metaLabel}>Date</Text>
+                      <Text style={styles.metaValue}>{b.date}</Text>
+                    </View>
+                    <View style={styles.vertSeparator} />
+                    <View style={styles.rowCol}>
+                      <Text style={styles.metaLabel}>Time</Text>
+                      <Text style={styles.metaValue}>{b.time}</Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.addressBox, { marginTop: 12 }]}> 
+                    <Text style={styles.metaLabel}>Address</Text>
+                    <Text style={styles.addressText} numberOfLines={1}>{b.address}</Text>
+                  </View>
+
+                  <View style={{ marginTop: 12 }}>
+                    <Text style={styles.metaLabel}>Notes:</Text>
+                    <View style={styles.notesInput}>
+                      <Text style={styles.notesText} numberOfLines={2}>{b.notes || 'No notes'}</Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.totalsRow, { marginTop: 12 }]}> 
+                    <Text style={styles.metaLabel}>Total</Text>
+                    <Text style={styles.totalAmount}>{formatCurrency(Math.max(0, Number(b.total || 0) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
+                  </View>
+                </View>
+              )}
 
               {expanded && (
                 <View>
@@ -167,22 +212,23 @@ export default function BookingCancelled() {
                     <Text style={styles.inclusions}>{b.desc}</Text>
                   </View>
 
-                  <View style={[styles.cancellationBox, { marginTop: 12 }]}>
-                    <Text style={[styles.metaLabel, { marginBottom: 6 }]}>Cancellation Details</Text>
-                    <Text style={styles.cancelReasonLabel}>Reason:</Text>
-                    <Text style={styles.cancelReason}>{b.cancellationReason}</Text>
-                    {b.cancellationDescription && (
-                      <>
-                        <Text style={[styles.cancelReasonLabel, { marginTop: 8 }]}>Description:</Text>
-                        <Text style={styles.cancelDescription}>{b.cancellationDescription}</Text>
-                      </>
-                    )}
-                  </View>
-
                   <View style={{ marginTop: 12 }}>
                     <Text style={styles.metaLabel}>Notes:</Text>
                     <View style={styles.notesInput}>
                       <Text style={styles.notesText}>{b.notes || 'No notes added.'}</Text>
+                    </View>
+                  </View>
+
+                  {/* Referral Voucher row */}
+                  <View style={styles.voucherRowOverview}>
+                    <View style={styles.voucherLeft}>
+                      <Ionicons name="pricetag-outline" size={18} color="#333" style={{ marginRight: 8 }} />
+                      <Text style={styles.voucherText}>{b.voucherCode ? b.voucherCode : 'Add Referral Voucher'}</Text>
+                      {b.voucherValue ? (
+                        <View style={styles.voucherBadge}>
+                          <Text style={styles.voucherBadgeText}>{formatCurrency(Number(b.voucherValue))}</Text>
+                        </View>
+                      ) : null}
                     </View>
                   </View>
 
@@ -197,11 +243,51 @@ export default function BookingCancelled() {
                     </View>
                   </View>
 
+                  <View style={[styles.totalsRow, { marginTop: 6 }]}> 
+                    <Text style={styles.smallLabel}>Transpo fee</Text>
+                    <Text style={styles.smallLabel}>+₱100.00</Text>
+                  </View>
+
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>TOTAL</Text>
                     <Text style={styles.totalValue}>
-                      {formatCurrency(Math.max(0, b.total - (b.voucherValue || 0)))}
+                      {formatCurrency(Math.max(0, b.total + 100 - (b.voucherValue || 0)))}
                     </Text>
+                  </View>
+
+                  <View style={styles.totalSeparator} />
+
+                  {/* Cancellation Details Section */}
+                  <View style={[styles.cancellationDetailsBox, { marginTop: 20 }]}>
+                    <Text style={styles.statusBadge}>CANCELLED</Text>
+                    
+                    <View style={styles.cancellationField}>
+                      <Text style={styles.cancellationLabel}>Reason for Cancelled</Text>
+                      <View style={styles.cancellationInput}>
+                        <Text style={styles.cancellationValue}>{b.cancellationReason}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.cancellationField}>
+                      <Text style={styles.cancellationLabel}>Additional Notes</Text>
+                      <View style={styles.cancellationInput}>
+                        <Text style={styles.cancellationValue}>{b.cancellationDescription || 'No notes added'}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.cancellationField}>
+                      <Text style={styles.cancellationLabel}>Cancelled Request Date</Text>
+                      <View style={styles.cancellationInput}>
+                        <Text style={styles.cancellationValue}>{b.date}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.cancellationField}>
+                      <Text style={styles.cancellationLabel}>Cancelled Request Time</Text>
+                      <View style={styles.cancellationInput}>
+                        <Text style={styles.cancellationValue}>{b.time}</Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
               )}
@@ -305,11 +391,25 @@ const styles = StyleSheet.create({
   tabTextActive: { color: '#3DC1C6', fontWeight: '700' },
 
   // Card
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#E0E0E0' },
+  card: { 
+    backgroundColor: '#fff', 
+    borderRadius: 8, 
+    padding: 12, 
+    marginBottom: 12, 
+    borderWidth: 1, 
+    borderColor: '#E0E0E0',
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 10,
+  },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   mainCategory: { fontSize: 18, fontWeight: '700' },
   subcategory: { fontSize: 14, color: '#666', marginTop: 6 },
   bookingId: { fontSize: 12, color: '#666', marginTop: 4 },
+  bookingIdHeader: { fontSize: 13, color: '#333', fontWeight: '700' },
   priceText: { fontSize: 16, fontWeight: '700', color: '#00ADB5' },
   chev: { fontSize: 12, color: '#999', marginTop: 6 },
 
@@ -320,6 +420,10 @@ const styles = StyleSheet.create({
   metaLabel: { fontSize: 12, color: '#666' },
   metaValue: { fontSize: 14, fontWeight: '600', marginTop: 4 },
   vertSeparator: { width: 1, backgroundColor: '#E0E0E0', marginHorizontal: 12, alignSelf: 'stretch' },
+  notesInput: { backgroundColor: '#f9f9f9', padding: 8, borderRadius: 4, marginTop: 4 },
+  notesText: { fontSize: 13, color: '#333' },
+  totalsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  totalAmount: { fontSize: 16, fontWeight: '700', color: '#3DC1C6' },
   
   // Boxes
   addressBox: { backgroundColor: '#f9f9f9', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#EAEAEA' },
@@ -354,12 +458,18 @@ const styles = StyleSheet.create({
   },
 
   // Notes
-  notesInput: { backgroundColor: '#f9f9f9', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#EAEAEA' },
-  notesText: { fontSize: 13, color: '#666' },
+  // (notesInput and notesText already defined above)
+
+  // Voucher Styles
+  voucherRowOverview: { backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#E0E0E0', paddingVertical: 8, paddingHorizontal: 12, marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  voucherLeft: { flexDirection: 'row', alignItems: 'center' },
+  voucherText: { fontSize: 14, color: '#333' },
+  voucherBadge: { backgroundColor: '#00ADB5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginLeft: 8 },
+  voucherBadgeText: { color: '#fff', fontWeight: '700', fontSize: 12 },
 
   // Totals
   smallLabel: { fontSize: 13, color: '#666' },
-  totalsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
+  // (totalsRow already defined above)
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
   totalLabel: { fontSize: 16, fontWeight: '800', color: '#333' },
   totalValue: { fontSize: 16, fontWeight: '700', color: '#00ADB5' },
@@ -375,5 +485,18 @@ const styles = StyleSheet.create({
   clearBtn: { marginTop: 10, paddingVertical: 8, paddingHorizontal: 20 },
   clearText: { color: '#666' },
 
+  // Cancellation Details Section
+  cancellationDetailsBox: { backgroundColor: '#fffefeff', borderRadius: 8, padding: 16 },
+  statusBadge: { fontSize: 12, fontWeight: '700', color: '#333', textAlign: 'center', marginBottom: 16, backgroundColor: '#e8e8e8', paddingVertical: 8, borderRadius: 4 },
+  cancellationField: { marginBottom: 16 },
+  cancellationLabel: { fontSize: 12, color: '#666', fontWeight: '600', marginBottom: 8 },
+  cancellationInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 6, padding: 12, backgroundColor: '#fff' },
+  cancellationValue: { fontSize: 14, color: '#333' },
+
   // footer handled by layout
+  totalSeparator: {
+    height: 1,
+    backgroundColor: '#00ABB1',
+    marginVertical: 8,
+  },
 });

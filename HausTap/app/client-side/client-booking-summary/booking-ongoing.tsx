@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // Example ongoing booking shown when no stored ongoing bookings exist
 const mockOngoing = [
@@ -21,8 +22,8 @@ const mockOngoing = [
     total: 1000,
     desc: 'Basic Cleaning — living room, kitchen, bedroom, mopping, dusting.',
     notes: '',
-    voucherCode: '',
-    voucherValue: 0,
+    voucherCode: 'Referral Voucher',
+    voucherValue: 10,
     status: 'ongoing',
     conversationId: 'ongoing-001', // Using booking ID as conversation ID
   },
@@ -99,16 +100,63 @@ export default function BookingOngoing() {
               <TouchableOpacity activeOpacity={0.85} onPress={() => setExpandedId(expanded ? null : b.id)}>
                 <View style={styles.cardHeaderRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.mainCategory}>{b.mainCategory}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={styles.mainCategory}>{b.mainCategory}</Text>
+                      <TouchableOpacity style={{ marginLeft: 8 }} onPress={() => {
+                        Alert.alert('Call', 'Open dialer to contact the service provider.');
+                      }}>
+                        <Ionicons name="call-outline" size={18} color="#007AFF" />
+                      </TouchableOpacity>
+                    </View>
                     <Text style={styles.subcategory}>{b.subCategory}</Text>
-                    <Text style={styles.bookingId}>Booking ID: {b.id}</Text>
                   </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.priceText}>{formatCurrency(Number(b.total || 0))}</Text>
+                  <View style={{ alignItems: 'flex-end', minWidth: 90 }}>
+                    {b.id && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={styles.bookingIdHeader}>{b.id}</Text>
+                        <TouchableOpacity style={{ marginLeft: 8 }} onPress={async () => {
+                          try { await Clipboard.setStringAsync(b.id); Alert.alert('Copied', `Booking ID ${b.id} copied to clipboard`); } catch (e) { console.warn(e); }
+                        }}>
+                          <Ionicons name="copy-outline" size={16} color="#00B0B9" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
                     <Text style={styles.chev}>{expanded ? '▲' : '▼'}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
+
+              {!expanded && (
+                <View>
+                  <View style={styles.divider} />
+                  <View style={styles.rowSmall}>
+                    <View style={styles.rowCol}>
+                      <Text style={styles.metaLabel}>Date</Text>
+                      <Text style={styles.metaValue}>{b.date}</Text>
+                    </View>
+                    <View style={styles.vertSeparator} />
+                    <View style={styles.rowCol}>
+                      <Text style={styles.metaLabel}>Time</Text>
+                      <Text style={styles.metaValue}>{b.time}</Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.addressBox, { marginTop: 12 }]}> 
+                    <Text style={styles.metaLabel}>Address</Text>
+                    <Text style={styles.addressText} numberOfLines={1}>{b.address}</Text>
+                  </View>
+
+                  <View style={{ marginTop: 12 }}>
+                    <Text style={styles.metaLabel}>Notes:</Text>
+                    <Text style={[styles.notesInput, { minHeight: 40 }]} numberOfLines={2}>{b.notes || '—'}</Text>
+                  </View>
+
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>TOTAL</Text>
+                    <Text style={styles.totalValue}>{formatCurrency(Math.max(0, Number(b.total || 0) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
+                  </View>
+                </View>
+              )}
 
               {expanded && (
                 <View>
@@ -149,7 +197,18 @@ export default function BookingOngoing() {
                     
                   </View>
 
-                  
+                  {/* Referral Voucher row */}
+                  <View style={styles.voucherRowOverview}>
+                    <View style={styles.voucherLeft}>
+                      <Ionicons name="pricetag-outline" size={18} color="#333" style={{ marginRight: 8 }} />
+                      <Text style={styles.voucherText}>{b.voucherCode ? b.voucherCode : 'Add Referral Voucher'}</Text>
+                      {b.voucherValue ? (
+                        <View style={styles.voucherBadge}>
+                          <Text style={styles.voucherBadgeText}>{formatCurrency(Number(b.voucherValue))}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
 
                   <View style={styles.totalsRow}>
                     <View>
@@ -162,9 +221,14 @@ export default function BookingOngoing() {
                     </View>
                   </View>
 
+                  <View style={[styles.totalsRow, { marginTop: 6 }]}> 
+                    <Text style={styles.smallLabel}>Transpo fee</Text>
+                    <Text style={styles.smallLabel}>+₱100.00</Text>
+                  </View>
+
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>TOTAL</Text>
-                    <Text style={styles.totalValue}>{formatCurrency(Math.max(0, Number(b.total || 0) - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
+                    <Text style={styles.totalValue}>{formatCurrency(Math.max(0, Number(b.total || 0) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
                   </View>
                   
                   <Text style={styles.payNote}>Full payment will be collected directly by the service provider upon completion of the service.</Text>
@@ -220,7 +284,9 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: '#fff' },
   tabText: { color: '#666' },
   tabTextActive: { color: '#3DC1C6', fontWeight: '700' },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#E0E0E0', marginHorizontal: 16 },
+  card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#E0E0E0', marginHorizontal: 16,
+    // thicker shadow to match booking card style
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 12, elevation: 10 },
   cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   mainCategory: { fontSize: 18, fontWeight: '700' },
   subcategory: { fontSize: 14, color: '#666', marginTop: 6 },
@@ -256,6 +322,7 @@ const styles = StyleSheet.create({
   providerName: { fontSize: 14, fontWeight: '700' },
   ratingText: { fontSize: 13, color: '#666', marginLeft: 6 },
   messageBtn: { marginLeft: 8, padding: 6, borderRadius: 20, backgroundColor: '#E8F8F8' },
+  bookingIdHeader: { fontSize: 13, color: '#333', fontWeight: '700' },
 
   // footer handled by layout
 });

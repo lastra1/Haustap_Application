@@ -1,66 +1,25 @@
-import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native";
+import MultiSelectList from "../../components/MultiSelectList";
 
 export default function VillaSmallerScreen() {
-	const router = useRouter();
-
 	const services = [
 		{
-			title: "Basic Cleaning – 3 Cleaner",
+			title: "Standard Cleaning – 2 Cleaners",
 			price: "₱3,500",
-			desc: "Inclusions:\nLiving room, bedrooms, dining cleaned\nTrash removal\nMirrors/windows wiped",
+			desc: "Inclusions:\nLiving & dining cleaning, kitchen wipe",
 		},
 		{
-			title: "Standard Cleaning – 3 Cleaners",
-			price: "₱5,500",
-			desc: "Inclusions:\nAll Basic tasks, Kitchen cleaning\nBathroom scrubbing\nFurniture under cleaning",
-		},
-		{
-			title: "Deep Cleaning – 4 Cleaners",
-			price: "₱9,000",
-			desc: "Inclusions:\nAll Standard tasks, Floor scrubbing & grout cleaning\nBehind appliances\nCarpet vacuum/shampoo\nDisinfection",
+			title: "Deep Cleaning – 3 Cleaners",
+			price: "₱5,000",
+			desc: "Inclusions:\nAll Standard plus floor scrubbing & appliance clean",
 		},
 	];
 
-	return (
-		<View style={styles.container}>
-			<ScrollView>
-				<Text style={styles.header}>Villa Smaller</Text>
-				<View style={styles.categoriesContainer}>
-					{services.map((s, i) => (
-						<TouchableOpacity
-							key={i}
-							style={styles.categoryBox}
-							onPress={() =>
-								router.push({
-									pathname: "/client-side/booking-summary",
-									params: {
-										categoryTitle: s.title,
-										categoryPrice: s.price,
-										categoryDesc: s.desc,
-										service: "Home Cleaning",
-										sub: "Villa - Smaller",
-										mainCategory: "Cleaning Services",
-										subCategory: "Villa - Smaller",
-									},
-								})
-							}
-						>
-							<View style={styles.categoryContent}>
-								<Text style={styles.categoryTitle}>{s.title}</Text>
-								<Text style={styles.categoryPrice}>{s.price}</Text>
-								<Text style={styles.categoryDesc}>{s.desc}</Text>
-							</View>
-						</TouchableOpacity>
-					))}
-				</View>
-			</ScrollView>
-		</View>
-	);
+	return <MultiSelectList items={services} mainCategory="Cleaning Services" serviceName="Villa — Smaller" />;
 }
 
-const styles = StyleSheet.create({
+	const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: "#fff" },
 	header: { fontSize: 24, fontWeight: "bold", padding: 16, color: "#000" },
 	categoriesContainer: { padding: 16 },

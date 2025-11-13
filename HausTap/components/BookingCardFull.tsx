@@ -452,11 +452,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     marginBottom: 16,
+    // thicker shadow for stronger elevation
     shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.22,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 14,
+    elevation: 10,
   },
   cardHeader: {
     flexDirection: "row",

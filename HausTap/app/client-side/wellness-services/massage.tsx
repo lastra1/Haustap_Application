@@ -1,75 +1,18 @@
-import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native";
+import MultiSelectList from "../components/MultiSelectList";
+
+const services = [
+  { title: "Full Body Massage (Swedish)", price: "₱800 / 60 mins", desc: "Relaxing massage to relieve tension and improve circulation." },
+  { title: "Full Body Massage (Deep Tissue)", price: "₱1,000 / 60 mins", desc: "Firm pressure to target deep muscle knots and chronic tension." },
+  { title: "Aromatherapy Massage", price: "₱1,200 / 60 mins", desc: "Relaxing massage with essential oils for stress relief" },
+  { title: "Reflexology (Foot Massage)", price: "₱600 / 45 mins", desc: "Focused massage on pressure points in the feet." },
+  { title: "Scalp & Head Massage", price: "₱500 / 30 mins", desc: "Relieves headaches and promotes blood circulation." },
+  { title: "Back & Shoulder Massage", price: "₱500 / 30 mins", desc: "Quick relief for upper body tension." },
+];
 
 export default function MassageScreen() {
-  const router = useRouter();
-  
-  const services = [
-    {
-      title: "Full Body Massage (Swedish)",
-      price: "₱800 / 60 mins",
-      desc: "Relaxing massage to relieve tension and improve circulation."
-    },
-    {
-      title: "Full Body Massage (Deep Tissue)",
-      price: "₱1,000 / 60 mins",
-      desc: "Firm pressure to target deep muscle knots and chronic tension."
-    },
-    {
-      title: "Aromatherapy Massage",
-      price: "₱1,200 / 60 mins",
-      desc: "Relaxing massage with essential oils for stress relief"
-    },
-    {
-      title: "Reflexology (Foot Massage)",
-      price: "₱600 / 45 mins",
-      desc: "Focused massage on pressure points in the feet."
-    },
-    {
-      title: "Scalp & Head Massage",
-      price: "₱500 / 30 mins",
-      desc: "Relieves headaches and promotes blood circulation."
-    },
-    {
-      title: "Back & Shoulder Massage",
-      price: "₱500 / 30 mins",
-      desc: "Quick relief for upper body tension."
-    }
-  ];
-
-  return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Text style={styles.header}>Massage Services</Text>
-        <View style={styles.categoriesContainer}>
-          {services.map((service, index) => (
-            <TouchableOpacity 
-              key={index}
-              style={styles.categoryBox}
-              onPress={() => router.push({
-                pathname: "/client-side/booking-summary",
-                params: { 
-                  categoryTitle: service.title,
-                  categoryPrice: service.price,
-                  categoryDesc: service.desc,
-                  service: "Massage",
-                  mainCategory: "Wellness Services",
-                  subCategory: "Massage",
-                }
-              })}
-            >
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryTitle}>{service.title}</Text>
-                <Text style={styles.categoryPrice}>{service.price}</Text>
-                <Text style={styles.categoryDesc}>{service.desc}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
+  return <MultiSelectList items={services} mainCategory="Wellness Services" serviceName="Massage" />;
 }
 
 const styles = StyleSheet.create({

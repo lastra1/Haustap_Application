@@ -32,6 +32,8 @@ export default function BookingScreen() {
       "Pest Control": null,
     },
   });
+  // Multi-select state for categories when checkboxes are enabled
+  const [selectedMulti, setSelectedMulti] = useState<string[]>([]);
 
   // If the booking screen is opened with query params (from client home),
   // preselect the service / subservice accordingly, but only on initial mount
@@ -49,6 +51,8 @@ export default function BookingScreen() {
 
   // Determine nav items and categories based on selectedService.
   const isIndoor = selectedService === "Indoor Services";
+  // Allow multi-select (checkbox) for these main categories; keep Home Cleaning subcategories as radio
+  const allowMultiSelect = isIndoor || (!isIndoor && selectedService !== "Home Cleaning");
   const navItems = isIndoor
     ? ["Handyman", "Plumbing", "Electrical", "Appliance Repair", "Pest Control"]
     : [
@@ -136,21 +140,29 @@ export default function BookingScreen() {
               key={index}
               style={[
                 styles.categoryBox,
-                (isIndoor
+                ((allowMultiSelect && selectedMulti.includes(item.title)) || (!allowMultiSelect && (isIndoor
                   ? selectedCategoryMap[selectedService][selectedSubservice] === item.title
-                  : selectedCategoryMap[selectedService] === item.title) && styles.selectedBox,
+                  : selectedCategoryMap[selectedService] === item.title))) && styles.selectedBox,
               ]}
-              onPress={() =>
-                setSelectedCategoryMap((prev: any) => {
-                  const copy = { ...prev };
-                  if (isIndoor) {
-                    copy[selectedService] = { ...copy[selectedService], [selectedSubservice]: item.title };
-                  } else {
-                    copy[selectedService] = item.title;
-                  }
-                  return copy;
-                })
-              }
+              onPress={() => {
+                if (allowMultiSelect) {
+                  // toggle selection
+                  setSelectedMulti(prev => {
+                    if (prev.includes(item.title)) return prev.filter(p => p !== item.title);
+                    return [...prev, item.title];
+                  });
+                } else {
+                  setSelectedCategoryMap((prev: any) => {
+                    const copy = { ...prev };
+                    if (isIndoor) {
+                      copy[selectedService] = { ...copy[selectedService], [selectedSubservice]: item.title };
+                    } else {
+                      copy[selectedService] = item.title;
+                    }
+                    return copy;
+                  });
+                }
+              }}
             >
               <View style={styles.categoryTextContainer}>
                 <Text style={styles.categoryTitle}>{item.title}</Text>
@@ -162,13 +174,19 @@ export default function BookingScreen() {
                 )}
                 <Text style={styles.categoryDesc}>{item.desc}</Text>
               </View>
-              <View style={styles.radioCircle}>
-                {(isIndoor
-                  ? selectedCategoryMap[selectedService][selectedSubservice] === item.title
-                  : selectedCategoryMap[selectedService] === item.title) && (
-                  <View style={styles.radioInner} />
-                )}
-              </View>
+              {allowMultiSelect ? (
+                <View style={styles.checkboxBox}>
+                  {selectedMulti.includes(item.title) && <View style={styles.checkboxInner} />}
+                </View>
+              ) : (
+                <View style={styles.radioCircle}>
+                  {(isIndoor
+                    ? selectedCategoryMap[selectedService][selectedSubservice] === item.title
+                    : selectedCategoryMap[selectedService] === item.title) && (
+                    <View style={styles.radioInner} />
+                  )}
+                </View>
+              )}
             </TouchableOpacity>
           )
         ))}
@@ -228,6 +246,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   radioInner: { height: 12, width: 12, borderRadius: 6, backgroundColor: "black" },
+
+  checkboxBox: {
+    height: 22,
+    width: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#666",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: '#fff'
+  },
+  checkboxInner: {
+    height: 12,
+    width: 12,
+    backgroundColor: '#00ADB5',
+    borderRadius: 3,
+  },
 
   nextButton: {
     backgroundColor: "#3DC1C6",

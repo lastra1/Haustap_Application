@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -12,41 +13,18 @@ import {
 
 export default function ScheduleBooking() {
   const router = useRouter();
-  const { categoryTitle, categoryPrice, categoryDesc, address, location, mainCategory, subCategory, service } = useLocalSearchParams();
+  const { categoryTitle, categoryPrice, categoryDesc, address, location, mainCategory, subCategory, service, selectedItems } = useLocalSearchParams();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [isFullyBooked, setIsFullyBooked] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
-  // Generate dates for the next 7 days
-  const dates = React.useMemo(() => {
-    const result = [];
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      result.push({
-        date: date,
-        formatted: date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        day: date.toLocaleDateString("en-US", { weekday: "long" }),
-      });
-    }
-    return result;
-  }, []);
+  // We now use a calendar/date picker instead of a fixed 7-day grid.
 
-  // Mock available times
-  const availableTimes = [
-    "9:00 AM",
-    "10:00 AM",
-    "11:00 AM",
-    "1:00 PM",
-    "2:00 PM",
-    "3:00 PM",
-    "4:00 PM",
-  ];
+  // (We no longer use a static time list; user picks a time via time picker)
+
+  const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   // Check if date is fully booked - Saturday and Sunday are fully booked
   const checkAvailability = (date: Date) => {
@@ -54,15 +32,25 @@ export default function ScheduleBooking() {
     return dayOfWeek !== 0 && dayOfWeek !== 6;
   };
 
+  // minimum selectable date: today (start of day)
+  const minDate = new Date();
+  minDate.setHours(0,0,0,0);
+
   // No need for useEffect since we handle availability in handleDateSelect
 
-  const handleDateSelect = (dateItem: { date: Date, formatted: string }) => {
-    setSelectedDate(dateItem.formatted);
-    const isAvailable = checkAvailability(dateItem.date);
-    setIsFullyBooked(!isAvailable);
-    if (!isAvailable) {
-      setSelectedTime("");
+  const handleDateSelect = (date: Date) => {
+    // guard: do not accept past dates
+    const picked = new Date(date);
+    picked.setHours(0,0,0,0);
+    if (picked < minDate) {
+      // ignore and keep picker open (or show message)
+      return;
     }
+    const formatted = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    setSelectedDate(formatted);
+    const isAvailable = checkAvailability(date);
+    setIsFullyBooked(!isAvailable);
+    if (!isAvailable) setSelectedTime("");
   };
 
   return (
@@ -77,46 +65,42 @@ export default function ScheduleBooking() {
 
       <Text style={styles.sectionTitle}>Set your Date & Time</Text>
 
-      {/* Date Selection */}
-      <View style={styles.dateGrid}>
-        {dates.map((item) => (
-          <TouchableOpacity
-            key={item.formatted}
-            style={[
-              styles.dateCard,
-              selectedDate === item.formatted && styles.dateCardSelected,
-            ]}
-            onPress={() => handleDateSelect(item)}
-          >
-            <Text style={styles.dateDay}>{item.day}</Text>
-            <Text
-              style={[
-                styles.dateText,
-                selectedDate === item.formatted && { color: "#fff" },
-              ]}
-            >
-              {item.formatted}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* Calendar / Date Picker */}
+      <TouchableOpacity style={styles.calendarPicker} onPress={() => setShowDatePicker(true)}>
+        <Text style={{ color: selectedDate ? '#000' : '#888' }}>{selectedDate ?? 'Choose a date'}</Text>
+      </TouchableOpacity>
+      {showDatePicker && (
+        <DateTimePicker
+          value={new Date()}
+          minimumDate={minDate}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+          onChange={(_e: any, d: Date | undefined) => {
+            if (Platform.OS !== 'ios') setShowDatePicker(false);
+            if (d) handleDateSelect(d);
+          }}
+        />
+      )}
 
-      {/* Time Selection */}
+      {/* Time Selection (native time picker trigger) */}
       {selectedDate && !isFullyBooked && (
         <>
           <Text style={styles.label}>Time</Text>
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={selectedTime}
-              onValueChange={(value) => setSelectedTime(value)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select time" value="" />
-              {availableTimes.map((time) => (
-                <Picker.Item key={time} label={time} value={time} />
-              ))}
-            </Picker>
-          </View>
+          <TouchableOpacity style={styles.calendarPicker} onPress={() => setShowTimePicker(true)}>
+            <Text style={{ color: selectedTime ? '#000' : '#888' }}>{selectedTime ?? 'Choose a time'}</Text>
+          </TouchableOpacity>
+          {showTimePicker && (
+            <DateTimePicker
+              value={new Date()}
+              mode="time"
+              is24Hour={false}
+              display={Platform.OS === 'ios' ? 'spinner' : 'clock'}
+              onChange={(_e: any, d: Date | undefined) => {
+                if (Platform.OS !== 'ios') setShowTimePicker(false);
+                if (d) setSelectedTime(formatTime(d));
+              }}
+            />
+          )}
         </>
       )}
 
@@ -156,11 +140,12 @@ export default function ScheduleBooking() {
                 mainCategory,
                 subCategory,
                 service,
+                selectedItems,
               },
             } as any)
           }
         >
-          <Text style={styles.nextText}>Next</Text>
+          <Text style={styles.nextText}>Schedule</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -214,6 +199,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#000",
+  },
+  calendarPicker: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 24,
+    alignItems: 'center',
   },
   label: {
     fontSize: 14,

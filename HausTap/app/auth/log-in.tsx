@@ -10,10 +10,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useAuth } from '../../app/context/AuthContext';
+import { accountsStore } from '../../src/services/accountsStore';
 import { login } from '../../src/services/auth-api';
 
 export default function LogInScreen() {
   const router = useRouter();
+  const { login: authLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -26,18 +29,32 @@ export default function LogInScreen() {
     }
     try {
       setError('');
-      const userData = await login(email, password);
-      console.log('Login successful:', userData);
+      // Verify credentials with server first (optional)
+      const userData = await login(email, password).catch((e) => {
+        // server verification failed, but we'll still try local auth below
+        console.warn('Server login failed or unavailable', e);
+        return null;
+      });
 
-      if (userData.user.role === 'client') {
+      // Ensure local auth context is set so app treats user as logged in
+      try {
+        await authLogin(email, password);
+      } catch (e) {
+        // If local account doesn't exist, create it from server response or fallback
+        try {
+          await accountsStore.addAccount({ email, password, isHausTapPartner: false });
+          await authLogin(email, password);
+        } catch (e2) {
+          console.warn('Failed to create local account for auth context', e2);
+        }
+      }
+
+      // Decide routing based on server role when available, otherwise default to client
+      const role = (userData && (userData.user?.role || userData.role)) || 'client';
+      if (role === 'client') {
         router.replace('/client-side');
-        console.log('Login as Client');
-      } else if (userData.user.role === 'service-provider' || userData.user.role === 'provider') {
-        console.log('Login as Service Provider');
-        router.replace('/service-provider');
       } else {
-        console.log('Login as Client');
-        router.replace('/client-side'); // Default fallback route
+        router.replace('/service-provider');
       }
     } catch (err: any) {
       const errorMessage = err?.message || 'An error occurred during login';

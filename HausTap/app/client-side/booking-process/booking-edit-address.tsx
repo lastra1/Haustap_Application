@@ -26,7 +26,8 @@ export default function BookingEditAddress() {
     categoryDesc,
     mainCategory,
     subCategory,
-    service
+    service,
+    selectedItems,
   } = useLocalSearchParams();
 
   useEffect(() => {
@@ -86,7 +87,8 @@ export default function BookingEditAddress() {
         categoryDesc,
         mainCategory,
         subCategory,
-        service
+        service,
+        selectedItems,
       } 
     } as any);
   }
@@ -107,7 +109,8 @@ export default function BookingEditAddress() {
         categoryDesc,
         mainCategory,
         subCategory,
-        service
+        service,
+        selectedItems,
       } 
     } as any);
   }

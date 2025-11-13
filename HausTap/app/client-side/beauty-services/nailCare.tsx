@@ -1,45 +1,11 @@
-import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native";
+import MultiSelectList from "../components/MultiSelectList";
 import { nailCategories } from "../data/nails";
 
 export default function NailCareScreen() {
-  const router = useRouter();
-  
   const services = nailCategories;
-
-  return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Text style={styles.header}>Nail Care Services</Text>
-        <View style={styles.categoriesContainer}>
-          {services.map((service, index) => (
-            <TouchableOpacity 
-              key={index}
-              style={styles.categoryBox}
-              onPress={() => router.push({
-                pathname: "/client-side/booking-summary",
-                params: { 
-                  categoryTitle: service.title,
-                  categoryPrice: service.price,
-                  categoryDesc: service.desc,
-                  service: "Nail Care",
-                  mainCategory: "Beauty Services",
-                  subCategory: "Nails",
-                }
-              })}
-            >
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryTitle}>{service.title}</Text>
-                <Text style={styles.categoryPrice}>{service.price}</Text>
-                <Text style={styles.categoryDesc}>{service.desc}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
+  return <MultiSelectList items={services} mainCategory="Beauty Services" serviceName="Nail Care" />;
 }
 
 const styles = StyleSheet.create({

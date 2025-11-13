@@ -1,9 +1,8 @@
 import { registerRootComponent } from "expo";
-import LogInScreen from "./auth/log-in";
+import GuestAccount from "./guess-account";
 
 export default function App() {
-
-  return <LogInScreen />;
+  return <GuestAccount />;
 }
 
 registerRootComponent(App);

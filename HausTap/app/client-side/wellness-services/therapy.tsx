@@ -1,70 +1,17 @@
-import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native";
+import MultiSelectList from "../components/MultiSelectList";
+
+const services = [
+  { title: "Initial Assessment", price: "₱1,000", desc: "Complete physical assessment and treatment plan development" },
+  { title: "General Physical Therapy", price: "₱800/session", desc: "Standard physical therapy treatment for general conditions" },
+  { title: "Sports Injury Therapy", price: "₱1,200/session", desc: "Specialized treatment for sports-related injuries" },
+  { title: "Post-Surgery Rehabilitation", price: "₱1,500/session", desc: "Rehabilitation therapy for post-surgery recovery" },
+  { title: "Exercise Program", price: "₱2,000", desc: "Customized exercise program development with follow-up sessions" },
+];
 
 export default function TherapyScreen() {
-  const router = useRouter();
-  
-  const services = [
-    { 
-      title: "Initial Assessment",
-      price: "₱1,000",
-      desc: "Complete physical assessment and treatment plan development"
-    },
-    { 
-      title: "General Physical Therapy",
-      price: "₱800/session",
-      desc: "Standard physical therapy treatment for general conditions"
-    },
-    { 
-      title: "Sports Injury Therapy",
-      price: "₱1,200/session",
-      desc: "Specialized treatment for sports-related injuries"
-    },
-    { 
-      title: "Post-Surgery Rehabilitation",
-      price: "₱1,500/session",
-      desc: "Rehabilitation therapy for post-surgery recovery"
-    },
-    { 
-      title: "Exercise Program",
-      price: "₱2,000",
-      desc: "Customized exercise program development with follow-up sessions"
-    }
-  ];
-
-  return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Text style={styles.header}>Physical Therapy Services</Text>
-        <View style={styles.categoriesContainer}>
-          {services.map((service, index) => (
-            <TouchableOpacity 
-              key={index}
-              style={styles.categoryBox}
-              onPress={() => router.push({
-                pathname: "/client-side/booking-summary",
-                params: { 
-                  categoryTitle: service.title,
-                  categoryPrice: service.price,
-                  categoryDesc: service.desc,
-                    service: "Therapy",
-                    mainCategory: "Wellness Services",
-                    subCategory: "Therapy",
-                }
-              })}
-            >
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryTitle}>{service.title}</Text>
-                <Text style={styles.categoryPrice}>{service.price}</Text>
-                <Text style={styles.categoryDesc}>{service.desc}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
+  return <MultiSelectList items={services} mainCategory="Wellness Services" serviceName="Therapy" />;
 }
 
 const styles = StyleSheet.create({

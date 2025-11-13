@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
+import Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Example return booking shown when no stored return bookings exist
 const mockReturn = [
@@ -15,6 +16,8 @@ const mockReturn = [
 		serviceTitle: 'Bungalow - Basic Cleaning',
 		providerId: 'provider-1',
 		providerName: 'Ana Santos',
+		// optional provider rating (undefined if not available)
+		providerRating: undefined,
 		date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
 		time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 		address: 'B1 L50 Mango St., Saint Joseph Village 10, San Pedro, Laguna',
@@ -37,6 +40,7 @@ export default function BookingReturn() {
 	const router = useRouter();
 	const [bookings, setBookings] = useState<typeof mockReturn>(mockReturn);
 	const [expandedId, setExpandedId] = useState<string | null>(null);
+	const [expandedReturnId, setExpandedReturnId] = useState<string | null>(null);
 	const [filterVisible, setFilterVisible] = useState(false);
 	const [filterFrom, setFilterFrom] = useState<string | null>(null);
 	const [filterTo, setFilterTo] = useState<string | null>(null);
@@ -126,101 +130,214 @@ export default function BookingReturn() {
 					</ScrollView>
 				</View>
 
-				{displayedBookings.map((b) => {
-					const expanded = expandedId === b.id;
-					return (
-						<View key={b.id} style={styles.card}>
-							<TouchableOpacity activeOpacity={0.85} onPress={() => setExpandedId(expanded ? null : b.id)}>
-								<View style={styles.cardHeaderRow}>
-									<View style={{ flex: 1 }}>
-										<Text style={styles.mainCategory}>{b.mainCategory}</Text>
-										<Text style={styles.subcategory}>{b.subCategory}</Text>
-										<Text style={styles.bookingId}>Booking ID: {b.id}</Text>
-									</View>
-									<View style={{ alignItems: 'flex-end' }}>
-										<Text style={styles.priceText}>{formatCurrency(b.total)}</Text>
-										<Text style={styles.chev}>{expanded ? '▲' : '▼'}</Text>
-									</View>
-								</View>
-							</TouchableOpacity>
-
-							{expanded && (
-								<View>
-									<View style={styles.divider} />
-
-									<View style={styles.rowSmall}>
-										<View style={styles.rowCol}>
-											<Text style={styles.metaLabel}>Date</Text>
-											<Text style={styles.metaValue}>{b.date}</Text>
+					{displayedBookings.map((b) => {
+						const expanded = expandedId === b.id;
+						return (
+							<View key={b.id} style={styles.card}>
+								<TouchableOpacity activeOpacity={0.85} onPress={() => setExpandedId(expanded ? null : b.id)}>
+									<View style={styles.cardHeaderRow}>
+										<View style={{ flex: 1 }}>
+											<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+												<Text style={styles.mainCategory}>{b.mainCategory}</Text>
+											</View>
+											<Text style={styles.subcategory}>{b.subCategory}</Text>
 										</View>
-										<View style={styles.vertSeparator} />
-										<View style={styles.rowCol}>
-											<Text style={styles.metaLabel}>Time</Text>
-											<Text style={styles.metaValue}>{b.time}</Text>
+										<View style={{ alignItems: 'flex-end', minWidth: 90 }}>
+											{b.id && (
+												<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+													<Text style={styles.bookingIdHeader}>{b.id}</Text>
+													<TouchableOpacity style={{ marginLeft: 8 }} onPress={async () => {
+														try { await Clipboard.setStringAsync(b.id); Alert.alert('Copied', `Booking ID ${b.id} copied to clipboard`); } catch (e) { console.warn(e); }
+													}}>
+														<Ionicons name="copy-outline" size={16} color="#00B0B9" />
+													</TouchableOpacity>
+												</View>
+											)}
+											<Text style={styles.chev}>{expanded ? '▲' : '▼'}</Text>
 										</View>
 									</View>
+								</TouchableOpacity>
+								{!expanded && (
+									<View>
+										<View style={styles.divider} />
+										<View style={styles.rowSmall}>
+											<View style={styles.rowCol}>
+												<Text style={styles.metaLabel}>Date</Text>
+												<Text style={styles.metaValue}>{b.date}</Text>
+											</View>
+											<View style={styles.vertSeparator} />
+											<View style={styles.rowCol}>
+												<Text style={styles.metaLabel}>Time</Text>
+												<Text style={styles.metaValue}>{b.time}</Text>
+											</View>
+										</View>
 
-									<View style={[styles.addressBox, { marginTop: 12 }]}> 
-										<Text style={styles.metaLabel}>Address</Text>
-										<Text style={styles.addressText}>{b.address}</Text>
-									</View>
+										<View style={[styles.addressBox, { marginTop: 12 }]}> 
+											<Text style={styles.metaLabel}>Address</Text>
+											<Text style={styles.addressText} numberOfLines={1}>{b.address}</Text>
+										</View>
 
-									<View style={[styles.selectedBox, { marginTop: 12 }]}>
-										<Text style={[styles.metaLabel, { marginBottom: 6 }]}>Service Details</Text>
-										<Text style={styles.selectedTitle}>{b.serviceTitle || b.subCategory}</Text>
-										<Text style={styles.inclusions}>{b.desc}</Text>
-									</View>
+										<View style={{ marginTop: 12 }}>
+											<Text style={styles.metaLabel}>Notes:</Text>
+											<View style={styles.notesInput}>
+												<Text style={styles.notesText} numberOfLines={2}>{b.notes || 'No notes'}</Text>
+											</View>
+										</View>
 
-                  <View style={[styles.cancellationBox, { marginTop: 12 }]}>
-                    <Text style={[styles.metaLabel, { marginBottom: 6 }]}>Return Details</Text>
-                    <Text style={styles.cancelReasonLabel}>Reason:</Text>
-                    <Text style={styles.cancelReason}>{b.returnReason}</Text>
-                    {b.returnDescription && (
-                      <>
-                        <Text style={[styles.cancelReasonLabel, { marginTop: 8 }]}>Description:</Text>
-                        <Text style={styles.cancelDescription}>{b.returnDescription}</Text>
-                      </>
-                    )}
-                    <View style={styles.returnFeeBox}>
-                      <Text style={[styles.returnFeeLabel, b.isWithinFreeWindow ? { color: '#4CAF50' } : { color: '#FF4444' }]}>
-                        {b.isWithinFreeWindow ? '✓ Free Return (Within 24 Hours)' : '₱300.00 Return Fee (After 24 Hours)'}
-                      </Text>
-                    </View>
-                  </View>									<View style={{ marginTop: 12 }}>
-										<Text style={styles.metaLabel}>Notes:</Text>
-										<View style={styles.notesInput}>
-											<Text style={styles.notesText}>{b.notes || 'No notes added.'}</Text>
+										<View style={[styles.totalsRow, { marginTop: 12 }]}
+										>
+											<Text style={styles.metaLabel}>Total</Text>
+											<Text style={styles.totalValue}>{formatCurrency(Math.max(0, Number(b.total || 0) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
 										</View>
 									</View>
+								)}
 
-                  <View style={styles.totalsRow}>
-                    <View>
-                      <Text style={styles.smallLabel}>Sub Total</Text>
-                      <Text style={styles.smallLabel}>Voucher Discount</Text>
-                      {!b.isWithinFreeWindow && (
-                        <Text style={[styles.smallLabel, { color: '#FF4444' }]}>Return Fee</Text>
-                      )}
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={styles.smallLabel}>{formatCurrency(b.total)}</Text>
-                      <Text style={styles.smallLabel}>{b.voucherValue ? formatCurrency(b.voucherValue) : '₱0.00'}</Text>
-                      {!b.isWithinFreeWindow && (
-                        <Text style={[styles.smallLabel, { color: '#FF4444' }]}>₱300.00</Text>
-                      )}
-                    </View>
-                  </View>
+								{expanded && (
+									<View>
+										<View style={styles.divider} />
 
-                  <View style={styles.totalRow}>
-                    <Text style={styles.totalLabel}>TOTAL</Text>
-                    <Text style={styles.totalValue}>
-                      {formatCurrency(Math.max(0, b.total - (b.voucherValue || 0) + (b.isWithinFreeWindow ? 0 : 300)))}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          );
-				})}
+										<View style={styles.rowSmall}>
+											<View style={styles.rowCol}>
+												<Text style={styles.metaLabel}>Date</Text>
+												<Text style={styles.metaValue}>{b.date}</Text>
+											</View>
+											<View style={styles.vertSeparator} />
+											<View style={styles.rowCol}>
+												<Text style={styles.metaLabel}>Time</Text>
+												<Text style={styles.metaValue}>{b.time}</Text>
+											</View>
+										</View>
+
+										<View style={[styles.addressBox, { marginTop: 12 }]}> 
+											<Text style={styles.metaLabel}>Address</Text>
+											<Text style={styles.addressText}>{b.address}</Text>
+										</View>
+
+										<View style={[styles.selectedBox, { marginTop: 12 }]}> 
+											<Text style={[styles.metaLabel, { marginBottom: 6 }]}>Service Details</Text>
+											<Text style={styles.selectedTitle}>{b.serviceTitle || b.subCategory}</Text>
+											<Text style={styles.inclusions}>{b.desc}</Text>
+										</View>
+
+										<View style={{ marginTop: 12 }}>
+											<Text style={styles.metaLabel}>Notes:</Text>
+											<View style={styles.notesInput}>
+												<Text style={styles.notesText}>{b.notes || 'No notes added.'}</Text>
+											</View>
+										</View>
+
+										{/* Referral Voucher row */}
+										<View style={styles.voucherRowOverview}>
+											<View style={styles.voucherLeft}>
+												<Ionicons name="pricetag-outline" size={18} color="#333" style={{ marginRight: 8 }} />
+												<Text style={styles.voucherText}>{b.voucherCode ? b.voucherCode : 'Add Referral Voucher'}</Text>
+												{b.voucherValue ? (
+													<View style={styles.voucherBadge}>
+														<Text style={styles.voucherBadgeText}>{formatCurrency(Number(b.voucherValue))}</Text>
+													</View>
+												) : null}
+											</View>
+										</View>
+
+										<View style={styles.totalsRow}>
+											<View>
+												<Text style={styles.smallLabel}>Sub Total</Text>
+												<Text style={styles.smallLabel}>Voucher Discount</Text>
+											</View>
+											<View style={{ alignItems: 'flex-end' }}>
+												<Text style={styles.smallLabel}>{formatCurrency(b.total)}</Text>
+												<Text style={styles.smallLabel}>{b.voucherValue ? formatCurrency(b.voucherValue) : '₱0.00'}</Text>
+											</View>
+										</View>
+
+										<View style={[styles.totalsRow, { marginTop: 6 }]}> 
+											<Text style={styles.smallLabel}>Transpo fee</Text>
+											<Text style={styles.smallLabel}>+₱100.00</Text>
+										</View>
+
+										<View style={styles.totalRow}>
+											<Text style={styles.totalLabel}>TOTAL</Text>
+											<Text style={styles.totalValue}>
+												{formatCurrency(Math.max(0, b.total + 100 - (b.voucherValue || 0)))}
+											</Text>
+										</View>
+
+										<View style={styles.totalSeparator} />
+
+										{/* Service Provider */}
+										<View style={styles.providerRow}>
+											<View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+												<Ionicons name="person-circle" size={36} color="#333" />
+												<View style={{ marginLeft: 10 }}>
+													<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+														<Text style={styles.providerName}>{b.providerName}</Text>
+													</View>
+													<View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+														<Ionicons name="star" size={14} color="#FFD700" />
+														<Text style={styles.ratingText}>{b.providerRating ?? '—'}</Text>
+													</View>
+												</View>
+											</View>
+										</View>
+												{/* Return Status Section */}
+												<TouchableOpacity 
+													style={styles.statusSection}
+													onPress={() => setExpandedReturnId(expandedReturnId === b.id ? null : b.id)}
+												>
+													<Text style={styles.statusLabel}>RETURN</Text>
+													<Text style={styles.statusDivider}>|</Text>
+													<Text style={styles.statusValue}>Pending Review</Text>
+													<Ionicons name={expandedReturnId === b.id ? 'chevron-up-outline' : 'chevron-down-outline'} size={20} color="#333" style={{ marginLeft: 'auto' }} />
+												</TouchableOpacity>
+
+												{/* Return Details Dropdown */}
+												{expandedReturnId === b.id && (
+													<View style={styles.returnDetailsDropdown}>
+														<View style={styles.returnDetailsRow}>
+															<Text style={styles.returnDetailsLabel}>Reason for Return:</Text>
+															<Text style={styles.returnDetailsValue}>{b.returnReason}</Text>
+														</View>
+
+														<View style={styles.returnDetailsRow}>
+															<Text style={styles.returnDetailsLabel}>Additional Notes:</Text>
+															<Text style={styles.returnDetailsValue}>{b.returnDescription || 'No notes added'}</Text>
+														</View>
+
+														<View style={styles.returnDetailsRow}>
+															<Text style={styles.returnDetailsLabel}>Request Return Date:</Text>
+															<Text style={styles.returnDetailsValue}>{b.returnRequestedAt ? new Date(b.returnRequestedAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : b.date}</Text>
+														</View>
+
+														<View style={styles.returnDetailsDivider} />
+
+														<View style={styles.returnDetailsRow}>
+															<Text style={styles.returnDetailsLabel}>Return Fee</Text>
+															<Text style={styles.returnDetailsValue}>₱</Text>
+														</View>
+
+														<View style={styles.returnDetailsRow}>
+															<Text style={styles.returnDetailsLabel}>Sub Total</Text>
+															<Text style={styles.returnDetailsValue}>₱</Text>
+														</View>
+
+														<View style={styles.returnDetailsRow}>
+															<Text style={styles.returnDetailsLabel}>Transpo fee</Text>
+															<Text style={styles.returnDetailsValue}>+₱100</Text>
+														</View>
+
+														<View style={[styles.returnDetailsRow, { marginTop: 12 }]}>
+															<Text style={styles.returnDetailsTotalLabel}>TOTAL</Text>
+															<Text style={styles.returnDetailsValue}>₱</Text>
+														</View>
+
+														<Text style={styles.returnDetailsFooter}>Full payment will be collected directly by the service provider upon completion of the service.</Text>
+													</View>
+												)}
+									</View>
+								)}
+							</View>
+						);
+					})}
 			</ScrollView>
 
 			{/* Date Filter Modal */}
@@ -318,11 +435,25 @@ const styles = StyleSheet.create({
 	tabTextActive: { color: '#3DC1C6', fontWeight: '700' },
 
 	// Card
-	card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: '#E0E0E0' },
+	card: { 
+		backgroundColor: '#fff', 
+		borderRadius: 8, 
+		padding: 12, 
+		marginBottom: 12, 
+		borderWidth: 1, 
+		borderColor: '#E0E0E0',
+		marginHorizontal: 16,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 8 },
+		shadowOpacity: 0.22,
+		shadowRadius: 12,
+		elevation: 10,
+	},
 	cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 	mainCategory: { fontSize: 18, fontWeight: '700' },
 	subcategory: { fontSize: 14, color: '#666', marginTop: 6 },
 	bookingId: { fontSize: 12, color: '#666', marginTop: 4 },
+	bookingIdHeader: { fontSize: 13, color: '#333', fontWeight: '700' },
 	priceText: { fontSize: 16, fontWeight: '700', color: '#00ADB5' },
 	chev: { fontSize: 12, color: '#999', marginTop: 6 },
 
@@ -341,56 +472,148 @@ const styles = StyleSheet.create({
 	selectedTitle: { fontSize: 16, fontWeight: '700', marginTop: 6 },
 	inclusions: { fontSize: 13, color: '#666', marginTop: 8 },
   
-  // Return Box (re-using cancellation styles)
-  cancellationBox: { 
-    backgroundColor: '#FFF8F8', 
-    padding: 10, 
-    borderRadius: 6, 
-    borderWidth: 1, 
-    borderColor: '#FFE0E0' 
-  },
-  cancelReasonLabel: { 
-    fontSize: 13, 
-    color: '#666', 
-    fontWeight: '600' 
-  },
-  cancelReason: { 
-    fontSize: 14, 
-    color: '#333', 
-    marginTop: 2 
-  },
-  cancelDescription: { 
-    fontSize: 13, 
-    color: '#666', 
-    marginTop: 2,
-    fontStyle: 'italic'
-  },
-  // Return fee specific styles
-  returnFeeBox: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#FFE0E0',
-  },
-  returnFeeLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  returnFeeAmount: {
-    fontSize: 13,
-    color: '#FF4444',
-    marginTop: 4,
-  },	// Notes
-	notesInput: { backgroundColor: '#f9f9f9', padding: 10, borderRadius: 6, borderWidth: 1, borderColor: '#EAEAEA' },
-	notesText: { fontSize: 13, color: '#666' },
+	// Notes
+	notesInput: { backgroundColor: '#f9f9f9', padding: 8, borderRadius: 4, marginTop: 4 },
+	notesText: { fontSize: 13, color: '#333' },
+	totalsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+	totalAmount: { fontSize: 16, fontWeight: '700', color: '#3DC1C6' },
 
 	// Totals
 	smallLabel: { fontSize: 13, color: '#666' },
-	totalsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
 	totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
 	totalLabel: { fontSize: 16, fontWeight: '800', color: '#333' },
 	totalValue: { fontSize: 16, fontWeight: '700', color: '#00ADB5' },
+
+	// Voucher Styles
+	voucherRowOverview: { backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#E0E0E0', paddingVertical: 8, paddingHorizontal: 12, marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+	voucherLeft: { flexDirection: 'row', alignItems: 'center' },
+	voucherText: { fontSize: 14, color: '#333' },
+	voucherBadge: { backgroundColor: '#00ADB5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginLeft: 8 },
+	voucherBadgeText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+
+	totalSeparator: {
+		height: 1,
+		backgroundColor: '#00ABB1',
+		marginVertical: 8,
+	},
+
+	// Service Provider Card
+	providerCard: {
+		marginTop: 6,
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+	},
+	providerLabel: {
+		fontSize: 11,
+		color: '#666',
+		marginBottom: 4,
+	},
+	providerInfo: {
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	providerAvatarContainer: {
+		marginRight: 10,
+	},
+	providerName: {
+		fontSize: 14,
+		fontWeight: '700',
+		color: '#333',
+	},
+	providerRating: {
+		fontSize: 11,
+		color: '#666',
+		marginLeft: 4,
+	},
+
+	// Small helpers used by provider row
+	providerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
+	ratingText: { fontSize: 13, color: '#666', marginLeft: 6 },
+
+	// Status Section
+	statusSection: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginTop: 12,
+		paddingVertical: 12,
+		paddingHorizontal: 12,
+		borderWidth: 1,
+		borderColor: '#00ABB1',
+		borderRadius: 8,
+		backgroundColor: '#f9fffe',
+	},
+	statusLabel: {
+		fontSize: 13,
+		fontWeight: '700',
+		color: '#333',
+	},
+	statusDivider: {
+		fontSize: 16,
+		color: '#00ABB1',
+		marginHorizontal: 8,
+	},
+	statusValue: {
+		fontSize: 13,
+		color: '#00ABB1',
+		fontWeight: '600',
+	},
+
+	// Return Details Dropdown
+	returnDetailsDropdown: {
+		marginTop: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 12,
+		borderWidth: 1,
+		borderColor: '#00ABB1',
+		borderTopWidth: 0,
+		borderBottomLeftRadius: 8,
+		borderBottomRightRadius: 8,
+		backgroundColor: '#f9fffe',
+	},
+	returnDetailsRow: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginBottom: 8,
+	},
+	returnDetailsLabel: {
+		fontSize: 13,
+		color: '#333',
+		fontWeight: '500',
+	},
+	returnDetailsValue: {
+		fontSize: 13,
+		color: '#333',
+		fontWeight: '600',
+		flex: 1,
+		textAlign: 'right',
+		marginLeft: 12,
+	},
+	returnDetailsDivider: {
+		height: 1,
+		backgroundColor: '#E0E0E0',
+		marginVertical: 12,
+	},
+	returnDetailsTotalLabel: {
+		fontSize: 14,
+		fontWeight: '800',
+		color: '#333',
+	},
+	returnDetailsFooter: {
+		fontSize: 11,
+		color: '#666',
+		marginTop: 12,
+		fontStyle: 'italic',
+	},
+
+	// Cancellation Details Section
+	cancellationDetailsBox: { backgroundColor: '#fffefeff', borderRadius: 8, padding: 16 },
+	returnDetailsBox: { backgroundColor: '#fffefeff', borderRadius: 8, padding: 16 },
+	statusBadge: { fontSize: 12, fontWeight: '700', color: '#333', textAlign: 'center', marginBottom: 16, backgroundColor: '#e8e8e8', paddingVertical: 8, borderRadius: 4 },
+	cancellationField: { marginBottom: 16 },
+	cancellationLabel: { fontSize: 12, color: '#666', fontWeight: '600', marginBottom: 8 },
+	cancellationInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 6, padding: 12, backgroundColor: '#fff' },
+	cancellationValue: { fontSize: 14, color: '#333' },
 
 	// Filter Modal
 	modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
@@ -402,7 +625,5 @@ const styles = StyleSheet.create({
 	applyText: { color: '#fff', fontWeight: '700' },
 	clearBtn: { marginTop: 10, paddingVertical: 8, paddingHorizontal: 20 },
 	clearText: { color: '#666' },
-
-		// footer handled by layout
 });
 

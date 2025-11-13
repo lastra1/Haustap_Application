@@ -6,13 +6,87 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { ThemedText } from '../../../components/themed-text';
 import { ThemedView } from '../../../components/themed-view';
 import { Colors } from '../../../constants/theme';
+import { useBookingSelection } from '../../context/BookingSelectionContext';
+import { applianceRepairCategories } from '../data/applianceRepair';
+import { acCleaningCategories, acDeepCleaningCategories, homeCleaningCategories } from '../data/cleaning';
+import { electricalCategories } from '../data/electrical';
+import { hairCategories } from '../data/hair';
+import { handymanCategories } from '../data/handyman';
+import { makeupCategories } from '../data/makeup';
+import { nailCategories } from '../data/nails';
+import { pestControlCategories } from '../data/pestControl';
+import { plumbingCategories } from '../data/plumbing';
 
 export default function ConfirmBookingScreen() {
   const params = useLocalSearchParams();
+  const { clearAll } = useBookingSelection();
 
   const handleBackToHome = async () => {
     // Save the complete booking details from the flow
     const id = `bkg-${Date.now()}`;
+    // build price map to compute subtotal when multiple services selected
+    const lists = [
+      ...nailCategories,
+      ...hairCategories,
+      ...makeupCategories,
+      ...handymanCategories,
+      ...plumbingCategories,
+      ...pestControlCategories,
+      ...applianceRepairCategories,
+      ...electricalCategories,
+      ...homeCleaningCategories,
+      ...acCleaningCategories,
+      ...acDeepCleaningCategories,
+    ];
+    const priceMap: Record<string, string> = {};
+    lists.forEach((it: any) => {
+      if (it && it.title && it.price) priceMap[it.title] = it.price;
+    });
+
+    const parsePriceNumber = (priceStr?: string) => {
+      if (!priceStr) return NaN;
+      const cleaned = String(priceStr).replace(/[^0-9.]/g, "");
+      const v = parseFloat(cleaned);
+      return Number.isFinite(v) ? v : NaN;
+    };
+
+    const parsedSelected = (() => {
+      const raw = params.selectedItems as string | undefined;
+      if (!raw) return [] as string[];
+      try {
+        const p = JSON.parse(String(raw));
+        if (Array.isArray(p)) return p.map(String);
+        if (typeof p === 'string') return [p];
+        return [] as string[];
+      } catch (e) {
+        return [String(raw)];
+      }
+    })();
+
+    // compute subtotal
+    const subtotal = (() => {
+      if (parsedSelected.length) {
+        let sum = 0;
+        let any = false;
+        parsedSelected.forEach((t) => {
+          const p = priceMap[t];
+          const n = parsePriceNumber(p);
+          if (!Number.isNaN(n)) {
+            sum += n;
+            any = true;
+          }
+        });
+        if (any) return sum;
+      }
+      const cp = parsePriceNumber(params.categoryPrice as string | undefined);
+      if (!Number.isNaN(cp)) return cp;
+      return 0;
+    })();
+
+    const transpoFee = 100;
+    const voucherValue = parsePriceNumber(params.voucher as string | undefined) || (params.voucherValue ? Number(params.voucherValue) : 0);
+    const total = Math.max(0, subtotal + transpoFee - voucherValue);
+
     const booking = {
       id,
       mainCategory: (params.mainCategory as string) || (params.category as string) || 'Service',
@@ -23,13 +97,19 @@ export default function ConfirmBookingScreen() {
       date: (params.date as string) || new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
       time: (params.time as string) || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       address: (params.address as string) || (params.location as string) || '—',
-      total: params.categoryPrice ? Number(String(params.categoryPrice).replace(/[^0-9.]/g, "")) : 0,
+      subtotal,
+      transpoFee,
+      voucherValue,
+      total,
       desc: (params.categoryDesc as string) || '',
       notes: (params.notes as string) || '',
       voucherCode: (params.voucherCode as string) || '',
-      voucherValue: params.voucherValue ? Number(params.voucherValue) : 0,
       status: 'pending'
     };
+    // attach selected items (if any)
+    if (Array.isArray(parsedSelected) && parsedSelected.length) {
+      (booking as any).selectedItems = parsedSelected;
+    }
 
     try {
       const raw = await AsyncStorage.getItem('HT_bookings');
@@ -41,7 +121,12 @@ export default function ConfirmBookingScreen() {
       Alert.alert('Error', 'Could not save booking locally.');
     }
 
-    // Navigate back to the client-side home page
+    // Clear selections and navigate back to the client-side home page
+    try {
+      clearAll();
+    } catch (e) {
+      // ignore if provider missing
+    }
     router.replace('/client-side');
   };
 

@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useBookingSelection } from '../context/BookingSelectionContext';
 import CategoryButton from "./components/CategoryButton";
 import NotificationPopup from './notification/user-notif-popup';
 
@@ -21,6 +22,7 @@ export default function ClientHomeScreen() {
   const [search, setSearch] = React.useState("");
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [unreadCount, setUnreadCount] = React.useState(0);
+  const { clearAll } = useBookingSelection();
 
   const searchIndex = [
     // Top-level categories
@@ -99,6 +101,12 @@ export default function ClientHomeScreen() {
           console.warn('Failed to load notifications count', e);
         }
       };
+      // Clear any in-memory selected services when returning to the client home
+      try {
+        clearAll();
+      } catch (e) {
+        // ignore if provider not mounted
+      }
       loadCount();
       return () => { mounted = false; };
     }, [])

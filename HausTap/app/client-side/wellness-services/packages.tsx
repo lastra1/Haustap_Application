@@ -1,54 +1,23 @@
-import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet } from "react-native";
+import MultiSelectList from "../components/MultiSelectList";
+
+const packages = [
+  {
+    title: "Total Relaxation Package",
+    price: "₱1,200",
+    desc: "Relaxing massage to relieve tension and improve circulation.\nSwedish Full Body Massage (60 mins) + Reflexology (45 mins)",
+  },
+  {
+    title: "Stress Relief Duo",
+    price: "₱900",
+    desc: "Back & Shoulder Massage (30 mins) + Scalp & Head Massage (30 mins)",
+  },
+];
 
 export default function WellnessPackagesScreen() {
-  const router = useRouter();
-
-  const packages = [
-    {
-      title: "Total Relaxation Package",
-      price: "₱1,200",
-      desc: "Relaxing massage to relieve tension and improve circulation.\nSwedish Full Body Massage (60 mins) + Reflexology (45 mins)",
-    },
-    {
-      title: "Stress Relief Duo",
-      price: "₱900",
-      desc: "Back & Shoulder Massage (30 mins) + Scalp & Head Massage (30 mins)",
-    },
-  ];
-
   return (
-    <View style={styles.container}>
-      <ScrollView>
-        <Text style={styles.header}>Wellness Packages</Text>
-        <View style={styles.categoriesContainer}>
-          {packages.map((pkg, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.categoryBox}
-              onPress={() =>
-                router.push({
-                  pathname: "/client-side/booking-summary",
-                  params: {
-                    categoryTitle: pkg.title,
-                    categoryPrice: pkg.price,
-                    categoryDesc: pkg.desc,
-                    service: "Wellness Package",
-                  },
-                })
-              }
-            >
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryTitle}>{pkg.title}</Text>
-                <Text style={styles.categoryPrice}>{pkg.price}</Text>
-                <Text style={styles.categoryDesc}>{pkg.desc}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
+    <MultiSelectList items={packages} mainCategory="Wellness Services" serviceName="Wellness Packages" />
   );
 }
 
