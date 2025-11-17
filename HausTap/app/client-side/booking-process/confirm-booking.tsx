@@ -10,12 +10,15 @@ import { useBookingSelection } from '../../context/BookingSelectionContext';
 import { applianceRepairCategories } from '../data/applianceRepair';
 import { acCleaningCategories, acDeepCleaningCategories, homeCleaningCategories } from '../data/cleaning';
 import { electricalCategories } from '../data/electrical';
+import { gardeningCategories } from '../data/gardening';
 import { hairCategories } from '../data/hair';
 import { handymanCategories } from '../data/handyman';
 import { makeupCategories } from '../data/makeup';
 import { nailCategories } from '../data/nails';
 import { pestControlCategories } from '../data/pestControl';
+import { pestControlOutdoorCategories } from '../data/pestControlOutdoor';
 import { plumbingCategories } from '../data/plumbing';
+import { wellnessCategories } from '../data/wellness';
 
 export default function ConfirmBookingScreen() {
   const params = useLocalSearchParams();
@@ -32,6 +35,9 @@ export default function ConfirmBookingScreen() {
       ...handymanCategories,
       ...plumbingCategories,
       ...pestControlCategories,
+      ...pestControlOutdoorCategories,
+      ...gardeningCategories,
+      ...wellnessCategories,
       ...applianceRepairCategories,
       ...electricalCategories,
       ...homeCleaningCategories,

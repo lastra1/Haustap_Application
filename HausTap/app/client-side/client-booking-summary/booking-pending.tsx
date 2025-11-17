@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // Example bookings shown when no real bookings exist yet
@@ -92,6 +92,18 @@ export default function BookingPending() {
     }, [])
   );
 
+  // Dev-only: log bookings so we can verify AsyncStorage/loading state in Metro
+  useEffect(() => {
+    if ((global as any).__DEV__) {
+      try {
+        console.log('[DEV] BookingPending bookings length:', Array.isArray(bookings) ? bookings.length : 'not-array');
+        console.log('[DEV] BookingPending bookings sample:', bookings && bookings.slice ? bookings.slice(0,3) : bookings);
+      } catch (e) {
+        console.log('[DEV] BookingPending logging failed', e);
+      }
+    }
+  }, [bookings]);
+
   return (
     <View style={styles.pageContainer}>
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
@@ -117,8 +129,9 @@ export default function BookingPending() {
         </TouchableOpacity>
       </View>
 
-  {bookings.map((b) => {
-        const expanded = expandedId === b.id;
+    {bookings.map((b) => {
+      const expanded = expandedId === b.id;
+      const isInspection = String(b.mainCategory || '').toLowerCase().includes('inspection') || String(b.subCategory || '').toLowerCase().includes('inspection');
         return (
           <View key={b.id} style={styles.card}>
             <TouchableOpacity activeOpacity={0.85} onPress={() => setExpandedId(expanded ? null : b.id)}>
@@ -184,10 +197,35 @@ export default function BookingPending() {
                   <Text style={[styles.notesInput, { minHeight: 40 }]} numberOfLines={2}>{b.notes || '—'}</Text>
                 </View>
 
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>TOTAL</Text>
-                  <Text style={styles.totalValue}>{formatCurrency(Math.max(0, parsePrice(b.total) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
-                </View>
+                {isInspection ? (
+                  <View>
+                    <View style={styles.breakdownRow}>
+                      <Text style={styles.smallLabel}>Service Fee</Text>
+                      <Text style={styles.smallLabel}>{formatCurrency(parsePrice(b.total))}</Text>
+                    </View>
+                    <View style={styles.breakdownRow}>
+                      <Text style={styles.smallLabel}>Sub Total</Text>
+                      <Text style={styles.smallLabel}>{formatCurrency(parsePrice(b.total))}</Text>
+                    </View>
+                    <View style={styles.breakdownRow}>
+                      <Text style={styles.smallLabel}>Transpo fee</Text>
+                      <Text style={styles.smallLabel}>+₱100.00</Text>
+                    </View>
+                    <View style={styles.breakdownRow}>
+                      <Text style={styles.smallLabel}>Voucher Discount</Text>
+                      <Text style={styles.smallLabel}>{b.voucherValue ? `- ${formatCurrency(Number(b.voucherValue))}` : '₱0.00'}</Text>
+                    </View>
+                    <View style={[styles.totalRow, { marginTop: 8 }]}> 
+                      <Text style={styles.totalLabel}>TOTAL</Text>
+                      <Text style={styles.totalValue}>{formatCurrency(Math.max(0, parsePrice(b.total) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>TOTAL</Text>
+                    <Text style={styles.totalValue}>{formatCurrency(Math.max(0, parsePrice(b.total) + 100 - (b.voucherValue ? Number(b.voucherValue) : 0)))}</Text>
+                  </View>
+                )}
 
                 <View style={styles.footerRow}>
                   <View style={{ position: 'relative' }}>
@@ -487,4 +525,5 @@ const styles = StyleSheet.create({
   descriptionInput: { borderWidth: 1, borderColor: '#EAEAEA', borderRadius: 6, padding: 10, height: 100, marginTop: 8 },
   submitButton: { backgroundColor: '#3DC1C6', paddingVertical: 12, borderRadius: 8, marginTop: 12, alignItems: 'center' },
   submitButtonText: { color: '#fff', fontWeight: '700' },
+  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
 });

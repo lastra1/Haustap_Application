@@ -13,6 +13,7 @@ interface FooterNavProps {
 export default function FooterNav({ section }: FooterNavProps) {
   const router = useRouter();
   const segments = useSegments();
+  const { user } = useAuth();
   const isProvider = section === "provider";
 
   // Determine which tab is active using segments
@@ -71,25 +72,19 @@ export default function FooterNav({ section }: FooterNavProps) {
         },
       ];
 
-  const { user } = useAuth();
-
-  const handleNav = (route: string, label: string) => {
-    // Guests may browse Home; other tabs require sign-up / login
-    const isHome = label === "Home";
-    if (!user && !isHome) {
-      router.push('/signup' as any);
-      return;
-    }
-    router.push(route as any);
-  };
-
   return (
     <View style={styles.footerNav}>
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.label}
           style={styles.navItem}
-          onPress={() => handleNav(tab.route, tab.label)}
+          onPress={() => {
+            if (!user && (tab.label === "Bookings" || tab.label === "Chat" || tab.label === "My Account")) {
+              router.push('/signup');
+            } else {
+              router.push(tab.route as any);
+            }
+          }}
         >
           <Ionicons
             name={tab.icon as any}

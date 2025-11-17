@@ -1,160 +1,125 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { setAuthToken } from '../../services/api-client';
+import { login as apiLogin, register as apiRegister } from '../../services/auth-api';
 
 type Role = 'client' | 'provider';
-type User = { email: string; role: Role; isHausTapPartner?: boolean; isApplicationPending?: boolean } | null;
+type User = any | null;
 
 type AuthContextValue = {
-  user: User;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<User>;
-  signup: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  setPartnerStatus: (value: boolean) => Promise<void>;
-  setApplicationPending: (value: boolean) => Promise<void>;
-  setMode: (mode: Role) => Promise<void>;
-  mode: Role;
+	user: User;
+	loading: boolean;
+	login: (email: string, password: string) => Promise<User>;
+	signup: (name: string, email: string, phone: string, password: string, confirmPassword: string) => Promise<any>;
+	logout: () => Promise<void>;
+	setPartnerStatus: (value: boolean) => Promise<void>;
+	setApplicationPending: (value: boolean) => Promise<void>;
+	setMode: (mode: Role) => Promise<void>;
+	mode: Role;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const STORAGE_KEY = 'HT_user';
+const STORAGE_KEY = 'HT_auth';
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User>(null);
-  const [loading, setLoading] = useState(true);
-  const [mode, setModeState] = useState<Role>('client');
+	const [user, setUser] = useState<User>(null);
+	const [token, setToken] = useState<string | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [mode, setModeState] = useState<Role>('client');
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          setUser(parsed.user || null);
-          setModeState(parsed.mode || 'client');
-        }
-      } catch (e) {
-        // ignore
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+	useEffect(() => {
+		(async () => {
+			try {
+				const raw = await SecureStore.getItemAsync(STORAGE_KEY);
+				if (raw) {
+					const parsed = JSON.parse(raw);
+					setUser(parsed.user || null);
+					setToken(parsed.token || null);
+					setModeState(parsed.mode || 'client');
+					if (parsed.token) setAuthToken(parsed.token);
+				}
+			} catch (e) {
+				// ignore
+			} finally {
+				setLoading(false);
+			}
+		})();
+	}, []);
 
-  const persist = async (u: User, m: Role) => {
-    if (u) await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ user: u, mode: m }));
-    else await AsyncStorage.removeItem(STORAGE_KEY);
-  };
+	const persist = async (u: User | null, t: string | null, m: Role) => {
+		if (u || t) {
+			try {
+				await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify({ user: u, token: t, mode: m }));
+			} catch (e) {
+				// ignore
+			}
+		} else {
+			try {
+				await SecureStore.deleteItemAsync(STORAGE_KEY);
+			} catch (e) {
+				// ignore
+			}
+		}
+	};
 
-  const login = async (email: string, password: string) => {
-    // Simulate async auth
-    await new Promise((r) => setTimeout(r, 300));
+	const login = async (email: string, password: string) => {
+		const res = await apiLogin(email, password);
+		// response shape may vary; try common keys
+		const tokenFromRes = res?.token || res?.data?.token || res?.access_token || res?.data?.access_token || res?.meta?.token;
+		const userFromRes = res?.user || res?.data?.user || res?.data || res;
 
-    // Check created accounts first
-    try {
-      const { accountsStore } = require('../../src/services/accountsStore');
-      const acc = accountsStore.getAccountByEmail(email);
-      if (acc && acc.password === password) {
-        const u = { email, role: 'client' as Role, isHausTapPartner: !!acc.isHausTapPartner, isApplicationPending: !!acc.isApplicationPending };
-        setUser(u);
-        await persist(u, 'client');
-        setModeState('client');
-        return u;
-      }
-    } catch (e) {
-      // ignore loading errors
-    }
+		setUser(userFromRes || null);
+		setToken(tokenFromRes || null);
+		if (tokenFromRes) setAuthToken(tokenFromRes);
+		await persist(userFromRes || null, tokenFromRes || null, (userFromRes && userFromRes.role) || 'client');
+		setModeState((userFromRes && userFromRes.role) || 'client');
+		return userFromRes;
+	};
 
-    // Fallback mocked credentials
-    const client = { email: 'haustapUser@gmail.com', password: '123haustap' };
-    const provider = { email: 'haustapProvider@gmail.com', password: '123haustap' };
-    const hybrid = { email: 'carleslie.organo@cdsp.edu.ph', password: 'password', isHausTapPartner: true };
+	const signup = async (name: string, email: string, phone: string, password: string, confirmPassword: string) => {
+		const res = await apiRegister(name, email, phone, password, confirmPassword);
+		return res;
+	};
 
-    if (email === client.email && password === client.password) {
-      const u = { email, role: 'client' as Role };
-      setUser(u);
-      await persist(u, 'client');
-      setModeState('client');
-      return u;
-    }
+	const logout = async () => {
+		setUser(null);
+		setToken(null);
+		setModeState('client');
+		setAuthToken(null);
+		await persist(null, null, 'client');
+	};
 
-    if (email === provider.email && password === password) {
-      const u = { email, role: 'provider' as Role };
-      setUser(u);
-      await persist(u, 'provider');
-      setModeState('provider');
-      return u;
-    }
+	const setPartnerStatus = async (value: boolean) => {
+		if (!user) return;
+		const updated = { ...user, isHausTapPartner: value };
+		setUser(updated);
+		await persist(updated, token, mode);
+	};
 
-    if (email === hybrid.email && password === hybrid.password) {
-      const u = { email, role: 'client' as Role, isHausTapPartner: true };
-      setUser(u);
-      await persist(u, 'client');
-      setModeState('client');
-      return u;
-    }
+	const setApplicationPending = async (value: boolean) => {
+		if (!user) return;
+		const updated = { ...user, isApplicationPending: value };
+		setUser(updated);
+		await persist(updated, token, mode);
+	};
 
-    // Not a valid account
-    throw new Error('Invalid email or password');
-  };
+	const setMode = async (m: Role) => {
+		setModeState(m);
+		await persist(user, token, m);
+	};
 
-  const signup = async (email: string, password: string) => {
-    // Persist a new account but do NOT auto-login
-  const { accountsStore } = require('../../src/services/accountsStore');
-  await accountsStore.addAccount({ email, password, isHausTapPartner: false });
-    return;
-  };
-
-  const logout = async () => {
-    setUser(null);
-    setModeState('client');
-    await persist(null, 'client');
-  };
-
-  const setPartnerStatus = async (value: boolean) => {
-    if (!user) return;
-    const updated = { ...user, isHausTapPartner: value };
-    setUser(updated);
-    // update accounts store if account exists
-    try {
-  const { accountsStore } = require('../../src/services/accountsStore');
-  await accountsStore.updateAccount(user.email, { isHausTapPartner: value });
-    } catch (e) {
-      // ignore
-    }
-    await persist(updated, mode);
-  };
-
-  const setApplicationPending = async (value: boolean) => {
-    if (!user) return;
-    const updated = { ...user, isApplicationPending: value };
-    setUser(updated);
-    try {
-      const { accountsStore } = require('../../src/services/accountsStore');
-      await accountsStore.updateAccount(user.email, { isApplicationPending: value });
-    } catch (e) {
-      // ignore
-    }
-    await persist(updated, mode);
-  };
-
-  const setMode = async (m: Role) => {
-    setModeState(m);
-    await persist(user, m);
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, setPartnerStatus, setApplicationPending, setMode, mode }}>
-      {children}
-    </AuthContext.Provider>
-  );
+	return (
+		<AuthContext.Provider value={{ user, loading, login, signup, logout, setPartnerStatus, setApplicationPending, setMode, mode }}>
+			{children}
+		</AuthContext.Provider>
+	);
 };
 
 export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+	const ctx = useContext(AuthContext);
+	if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+	return ctx;
 };
 
 export default AuthContext;

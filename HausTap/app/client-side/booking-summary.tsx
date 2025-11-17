@@ -1,21 +1,24 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useAuth } from "../context/AuthContext";
+//import { useAuth } from "../context/AuthContext";
 import { applianceRepairCategories } from "./data/applianceRepair";
 import { acCleaningCategories, acDeepCleaningCategories, homeCleaningCategories } from "./data/cleaning";
 import { electricalCategories } from "./data/electrical";
+import { gardeningCategories } from "./data/gardening";
 import { hairCategories } from "./data/hair";
 import { handymanCategories } from "./data/handyman";
 import { makeupCategories } from "./data/makeup";
 import { nailCategories } from "./data/nails";
 import { pestControlCategories } from "./data/pestControl";
+import { pestControlOutdoorCategories } from "./data/pestControlOutdoor";
 import { plumbingCategories } from "./data/plumbing";
+import { wellnessCategories } from "./data/wellness";
 
 export default function BookingSummary() {
   const router = useRouter();
   const params = useLocalSearchParams() as Record<string, any>;
-  const auth = useAuth();
+  //const auth = useAuth();
 
   const categoryTitle = params.categoryTitle as string | undefined;
   const categoryPrice = params.categoryPrice as string | undefined;
@@ -54,6 +57,9 @@ export default function BookingSummary() {
       ...handymanCategories,
       ...plumbingCategories,
       ...pestControlCategories,
+      ...pestControlOutdoorCategories,
+      ...gardeningCategories,
+      ...wellnessCategories,
       ...applianceRepairCategories,
       ...electricalCategories,
       ...homeCleaningCategories,
@@ -111,10 +117,10 @@ export default function BookingSummary() {
 
   const handleConfirm = () => {
     // If guest (not authenticated), send them to signup before they can continue booking
-    if (!auth.user) {
-      router.push('/signup' as any);
-      return;
-    }
+    // if (!auth.user) {
+    //   router.push('/signup' as any);
+    //   return;
+    // }
 
     const base =
       `/client-side/booking-process/booking-location?categoryTitle=${encodeURIComponent(categoryTitle ?? "")}` +

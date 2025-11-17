@@ -2,18 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { useAuth } from "../../context/AuthContext";
 
 export default function BookingOverview() {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const { categoryTitle, categoryPrice, categoryDesc, address, location, date, time, mainCategory, subCategory, voucherCode, voucherValue, selectedItems } = useLocalSearchParams();
   const [notes, setNotes] = useState("");
   const [agreement, setAgreement] = useState(false);
@@ -199,25 +201,29 @@ export default function BookingOverview() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.nextBtn, { opacity: agreement ? 1 : 0.5, alignSelf: 'stretch' }]}
-          disabled={!agreement}
-          onPress={() =>
+          style={[styles.nextBtn, { opacity: agreement && !loading ? 1 : 0.5, alignSelf: 'stretch' }]}
+          disabled={!agreement || loading}
+          onPress={() => {
+            if (!user) {
+              router.push('/signup');
+              return;
+            }
             router.push({
-                pathname: "/client-side/booking-process/booking-choose-sp",
-                params: { 
-                  categoryTitle, 
-                  categoryPrice, 
-                  categoryDesc, 
-                  address, 
-                  location, 
-                  date, 
-                  time, 
-                  mainCategory, 
-                  subCategory,
-                  selectedItems,
-                },
-              } as any)
-          }
+              pathname: '/client-side/booking-process/booking-choose-sp',
+              params: {
+                categoryTitle,
+                categoryPrice,
+                categoryDesc,
+                address,
+                location,
+                date,
+                time,
+                mainCategory,
+                subCategory,
+                selectedItems,
+              },
+            } as any);
+          }}
         >
           <Text style={styles.nextText}>Next</Text>
         </TouchableOpacity>

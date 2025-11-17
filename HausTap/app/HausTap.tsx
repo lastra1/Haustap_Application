@@ -1,6 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import React, { useState } from "react";
+import { register } from '../services/auth-api';
+import { sendEmailOtp } from '../src/utils/otp';
+import * as Validation from '../src/utils/validation';
 import {
     KeyboardAvoidingView,
     Modal,
@@ -46,54 +49,40 @@ export default function HausTap() {
   const [isOtpExpired, setIsOtpExpired] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState(""); // In a real app, this would come from the backend
 
-  const validateForm = () => {
-    // Basic required fields
-    if (!firstName || !lastName || !email || !mobileNumber || !password || !confirmPassword) {
-      alert("Please fill in all required fields");
-      return false;
+  const validateForm = (): boolean => {
+    const errors: string[] = [];
+
+    if (!Validation.isNonEmptyString(firstName)) errors.push("First Name is required");
+    if (!Validation.isNonEmptyString(lastName)) errors.push("Last Name is required");
+    if (!Validation.isNonEmptyString(email)) errors.push("Email is required");
+    if (!Validation.isNonEmptyString(mobileNumber)) errors.push("Mobile Number is required");
+    if (!Validation.isNonEmptyString(password)) errors.push("Password is required");
+    if (!Validation.isNonEmptyString(confirmPassword)) errors.push("Confirm Password is required");
+    if (!month || !day || !year) errors.push("Complete Birthdate is required");
+
+    if (Validation.isNonEmptyString(email) && !Validation.isValidEmail(email)) {
+        errors.push("Please enter a valid email address");
+    }
+    
+    if (Validation.isNonEmptyString(mobileNumber) && !Validation.isValidPhoneNumber(mobileNumber)) {
+        errors.push("Please enter a valid mobile number");
     }
 
-    // Password match
-    if (password !== confirmPassword) {
-      alert("Passwords do not match");
-      return false;
+
+    if (Validation.isNonEmptyString(password) && Validation.isNonEmptyString(confirmPassword) && password !== confirmPassword) {
+        errors.push("Passwords do not match");
     }
 
-    // Password length minimum
-    if ((password || "").length < 6) {
-      alert('Password must be at least 6 characters long');
-      return false;
+    if (Validation.isNonEmptyString(password) && !Validation.isStrongPassword(password)) {
+        errors.push("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character");
     }
-
-    // Email basic format
-    if (!email.includes("@") || !email.includes(".")) {
-      alert("Please enter a valid email address");
-      return false;
-    }
-
-    // Mobile number: must be exactly 11 digits
-    if (!/^\d{11}$/.test(mobileNumber)) {
-      alert('Mobile number must be 11 digits (numbers only)');
-      return false;
-    }
-
-    // Birthdate completeness
-    const mm = Number(month);
-    const dd = Number(day);
-    const yy = Number(year);
-    if (!mm || !dd || !yy) {
-      alert("Please enter your complete birthdate");
-      return false;
-    }
-
-    // Construct DOB and validate
-    const dob = new Date(yy, mm - 1, dd);
+	  // Construct DOB and validate
+    const dob = new Date(Number(year), Number(month) - 1, Number(day));
     if (isNaN(dob.getTime())) {
-      alert('Please enter a valid birthdate');
+      errors.push('Please enter a valid birthdate');
       return false;
     }
-
-    // Calculate age
+	 // Calculate age
     const today = new Date();
     let age = today.getFullYear() - dob.getFullYear();
     const m = today.getMonth() - dob.getMonth();
@@ -101,131 +90,126 @@ export default function HausTap() {
       age -= 1;
     }
     if (age < 18) {
-      alert('You must be at least 18 years old to sign up.');
+      errors.push('You must be at least 18 years old to sign up.');
       return false;
     }
 
+    if (errors.length > 0) {
+        alert(errors.join("\n"));
+        return false;
+    }
+
     return true;
-  };
+};
 
-  // Format remaining time to mm:ss
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
 
-  // Start OTP timer
-  const startOtpTimer = () => {
-    setRemainingTime(300); // Reset to 5 minutes
-    setIsOtpExpired(false);
-    
-    const timer = setInterval(() => {
-      setRemainingTime((prevTime) => {
-        if (prevTime <= 1) {
-          clearInterval(timer);
-          setIsOtpExpired(true);
-          return 0;
+    // Format remaining time to mm:ss
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
+    // Start OTP timer
+    const startOtpTimer = () => {
+        setRemainingTime(300); // Reset to 5 minutes
+        setIsOtpExpired(false);
+        
+        const timer = setInterval(() => {
+        setRemainingTime((prevTime) => {
+            if (prevTime <= 1) {
+            clearInterval(timer);
+            setIsOtpExpired(true);
+            return 0;
+            }
+            return prevTime - 1;
+        });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    };
+
+    // Generate new OTP
+    const generateNewOtp = async () => {
+        setOtpError("");
+        setOtp("");
+        
+        try {
+            const otpResponse = await sendEmailOtp(email);
+
+            if (otpResponse) {
+                setGeneratedOtp(otpResponse.otp);
+                console.log('OTP sent successfully:', otpResponse.otp);
+                startOtpTimer();
+            } 
+            else {
+                setOtpError("Failed to send OTP email. Please try again.");
+            }
+
+        } catch (error) {
+
+            console.error("Error sending OTP:", error);
+            setOtpError("Failed to send OTP email. Please try again.");
         }
-        return prevTime - 1;
-      });
-    }, 1000);
+    };
 
-    return () => clearInterval(timer);
-  };
+    // Verify OTP
+    const handleValidOtp = () => {
+        if (!otp) {
+            setOtpError("Please enter the OTP");
+            return;
+        }
 
-  // Generate a new OTP and start timer
-  const API_URL = Platform.OS === 'android' 
-  ? 'http://192.168.1.8:3000' // Your local IP address
-  : 'http://localhost:3000'; // iOS simulator or web
+        if (isOtpExpired) {
+            setOtpError("OTP has expired. Please request a new one.");
+            return;
+        }
 
-// Add debug logging
-console.log('Platform:', Platform.OS);
-console.log('API URL:', API_URL);
+        if (otp !== generatedOtp) {
+            setOtpError("Invalid OTP. Please try again.");
+            return;
+        }
 
-const generateNewOtp = async () => {
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(newOtp);
-    setOtpError("");
-    setOtp("");
-    
-    try {
-      console.log('Sending OTP to:', email);
-      console.log('Making request to:', `${API_URL}/api/send-otp`);
-      
-      // Add timeout and error handling
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
-      const response = await fetch(`${API_URL}/api/send-otp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          otp: newOtp,
-        }),
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
+        // OTP is valid
+        setOtpError("");
+        alert("Email verified successfully!");
+        handleSaveUser();
+    };
 
-      const data = await response.json();
-      
-      if (data.success) {
-        startOtpTimer();
-      } else {
-        setOtpError("Failed to send OTP email. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error sending OTP:", error);
-      setOtpError("Failed to send OTP email. Please try again.");
-    }
-  };
+    const handleSaveUser = async () => {
 
-  // Verify OTP
-  const verifyOtp = () => {
-    if (!otp) {
-      setOtpError("Please enter the OTP");
-      return;
-    }
+        console.log("Saving user:", {
+            firstName,
+            middleInitial,
+            lastName,
+            email,
+            mobileNumber,
+            password,
+            confirmPassword
+        });
+        try {
+            const name = firstName + " " + middleInitial + " " + lastName;
+            const response = await register(name, email, mobileNumber, password, confirmPassword);
 
-    if (isOtpExpired) {
-      setOtpError("OTP has expired. Please request a new one.");
-      return;
-    }
-
-    if (otp !== generatedOtp) {
-      setOtpError("Invalid OTP. Please try again.");
-      return;
-    }
-
-    // OTP is valid
-    setOtpError("");
-    // Create account in local accounts store (do NOT auto-login)
-    (async () => {
-      try {
-        await accountsStore.addAccount({ email, password, isHausTapPartner: false });
-        alert('Email verified and account created. Please sign in using your credentials.');
-      } catch (e) {
-        console.error('Failed to save account', e);
-        alert('Account created but failed to persist locally.');
-      } finally {
-        setShowEmailVerification(false);
-  try { router.push('/auth/log-in'); } catch (_) {}
-      }
-    })();
-  };
+            if (response.success) {
+                alert("Registration successful! You can now log in.");
+                router.replace('/auth/log-in');
+            }
+            else {
+                alert("Registration failed: " + (response.message || "Unknown error"));
+            }
+        } catch (error) {
+            console.error("Error signing up:", error);
+            alert("Failed to sign up. Please try again later.");
+        }
+    };
 
   const handleSignUp = async () => {
     if (validateForm()) {
-      // Show Terms & Agreement modal first; when user agrees we'll continue to OTP
-      setShowTerms(true);
+      setShowEmailVerification(true);
+      await generateNewOtp(); // Generate OTP and start timer when modal opens
     }
   };
-
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -646,7 +630,7 @@ const generateNewOtp = async () => {
 
             <TouchableOpacity 
               style={[styles.button, { width: '100%', marginTop: 15 }]}
-              onPress={verifyOtp}
+              onPress={handleValidOtp}
             >
               <Text style={styles.buttonText}>Verify</Text>
             </TouchableOpacity>
