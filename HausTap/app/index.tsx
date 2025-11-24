@@ -1,4 +1,5 @@
 import { registerRootComponent } from "expo";
+import * as Linking from 'expo-linking';
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { getUserRole, loadBaseUrl } from "../src/config/apiConfig";
@@ -7,7 +8,17 @@ export default function App() {
   useEffect(() => {
     const initializeApp = async () => {
       await loadBaseUrl();
-     
+      // If the app was opened via a URL (e.g. QR / deep link), always route to guest first
+      try {
+        const initialUrl = await Linking.getInitialURL();
+        if (initialUrl) {
+          router.replace('/guess-account');
+          return;
+        }
+      } catch (e) {
+        // ignore linking errors and fall back to role-based routing
+      }
+
       const role = await getUserRole();
 
       if (!role) {

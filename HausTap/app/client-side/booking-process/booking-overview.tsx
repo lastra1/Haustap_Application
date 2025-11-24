@@ -11,11 +11,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useAuth } from "../../context/AuthContext";
+import { getUserRole } from '../../../src/config/apiConfig';
 
 export default function BookingOverview() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const loading = false;
   const { categoryTitle, categoryPrice, categoryDesc, address, location, date, time, mainCategory, subCategory, voucherCode, voucherValue, selectedItems } = useLocalSearchParams();
   const [notes, setNotes] = useState("");
   const [agreement, setAgreement] = useState(false);
@@ -204,10 +204,42 @@ export default function BookingOverview() {
           style={[styles.nextBtn, { opacity: agreement && !loading ? 1 : 0.5, alignSelf: 'stretch' }]}
           disabled={!agreement || loading}
           onPress={() => {
-            if (!user) {
-              router.push('/signup');
-              return;
-            }
+                (async () => {
+                  const role = await getUserRole();
+                  if (!role) {
+                    const s = (v?: string | string[]) => (Array.isArray(v) ? String(v[0]) : String(v ?? ""));
+                    const redirectPath =
+                      `/client-side/booking-process/booking-choose-sp?categoryTitle=${encodeURIComponent(s(categoryTitle))}` +
+                      `&categoryPrice=${encodeURIComponent(s(categoryPrice))}` +
+                      `&categoryDesc=${encodeURIComponent(s(categoryDesc))}` +
+                      `&address=${encodeURIComponent(s(address))}` +
+                      `&location=${encodeURIComponent(s(location))}` +
+                      `&date=${encodeURIComponent(s(date))}` +
+                      `&time=${encodeURIComponent(s(time))}` +
+                      `&mainCategory=${encodeURIComponent(s(mainCategory))}` +
+                      `&subCategory=${encodeURIComponent(s(subCategory))}` +
+                      (selectedItems ? `&selectedItems=${encodeURIComponent(String(selectedItems))}` : "");
+
+                    router.push(`/signup?redirect=${encodeURIComponent(redirectPath)}` as any);
+                    return;
+                  }
+
+                  router.push({
+                    pathname: '/client-side/booking-process/booking-choose-sp',
+                    params: {
+                      categoryTitle,
+                      categoryPrice,
+                      categoryDesc,
+                      address,
+                      location,
+                      date,
+                      time,
+                      mainCategory,
+                      subCategory,
+                      selectedItems,
+                    },
+                  } as any);
+                })();
             router.push({
               pathname: '/client-side/booking-process/booking-choose-sp',
               params: {

@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 //import { useAuth } from "../context/AuthContext";
+import { getUserRole } from "../../src/config/apiConfig";
 import { applianceRepairCategories } from "./data/applianceRepair";
 import { acCleaningCategories, acDeepCleaningCategories, homeCleaningCategories } from "./data/cleaning";
 import { electricalCategories } from "./data/electrical";
@@ -117,21 +118,35 @@ export default function BookingSummary() {
 
   const handleConfirm = () => {
     // If guest (not authenticated), send them to signup before they can continue booking
-    // if (!auth.user) {
-    //   router.push('/signup' as any);
-    //   return;
-    // }
+    (async () => {
+      const role = await getUserRole();
+      if (!role) {
+        // pass the full intended booking URL as `redirect` so signup can return here
+        const redirect = encodeURIComponent(
+          `/client-side/booking-process/booking-location?categoryTitle=${encodeURIComponent(categoryTitle ?? "")}` +
+          `&categoryPrice=${encodeURIComponent(categoryPrice ?? "")}` +
+          `&categoryDesc=${encodeURIComponent(categoryDesc ?? "")}` +
+          `&mainCategory=${encodeURIComponent(mainCategory ?? "")}` +
+          `&subCategory=${encodeURIComponent(subCategory ?? "")}` +
+          (service ? `&service=${encodeURIComponent(service)}` : "") +
+          (selectedItemsRaw ? `&selectedItems=${encodeURIComponent(String(selectedItemsRaw))}` : "")
+        );
+        router.push(`/signup?redirect=${redirect}` as any);
+        return;
+      }
 
-    const base =
-      `/client-side/booking-process/booking-location?categoryTitle=${encodeURIComponent(categoryTitle ?? "")}` +
-      `&categoryPrice=${encodeURIComponent(categoryPrice ?? "")}` +
-      `&categoryDesc=${encodeURIComponent(categoryDesc ?? "")}` +
-      `&mainCategory=${encodeURIComponent(mainCategory ?? "")}` +
-      `&subCategory=${encodeURIComponent(subCategory ?? "")}` +
-      (service ? `&service=${encodeURIComponent(service)}` : "") +
-      (selectedItemsRaw ? `&selectedItems=${encodeURIComponent(String(selectedItemsRaw))}` : "");
+      // otherwise continue booking flow
+      const base =
+        `/client-side/booking-process/booking-location?categoryTitle=${encodeURIComponent(categoryTitle ?? "")}` +
+        `&categoryPrice=${encodeURIComponent(categoryPrice ?? "")}` +
+        `&categoryDesc=${encodeURIComponent(categoryDesc ?? "")}` +
+        `&mainCategory=${encodeURIComponent(mainCategory ?? "")}` +
+        `&subCategory=${encodeURIComponent(subCategory ?? "")}` +
+        (service ? `&service=${encodeURIComponent(service)}` : "") +
+        (selectedItemsRaw ? `&selectedItems=${encodeURIComponent(String(selectedItemsRaw))}` : "");
 
-    router.push(base as any);
+      router.push(base as any);
+    })();
   };
 
   return (

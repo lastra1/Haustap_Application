@@ -1,9 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import * as SecureStore from 'expo-secure-store';
 import React, { useState } from "react";
-import { register } from '../services/auth-api';
-import { sendEmailOtp } from '../src/utils/otp';
-import * as Validation from '../src/utils/validation';
 import {
     KeyboardAvoidingView,
     Modal,
@@ -17,12 +15,17 @@ import {
     View
 } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { setAuthToken } from '../services/api-client';
+import { login as apiLogin, register } from '../services/auth-api';
+import { setUserRole } from '../src/config/apiConfig';
+import { sendEmailOtp } from '../src/utils/otp';
+import * as Validation from '../src/utils/validation';
 
-import { useRouter } from 'expo-router';
-import { accountsStore } from '../src/services/accountsStore';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 export default function HausTap() {
   const router = useRouter();
+  const params = useLocalSearchParams() as Record<string, any>;
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [month, setMonth] = useState("");
@@ -192,8 +195,38 @@ export default function HausTap() {
             const response = await register(name, email, mobileNumber, password, confirmPassword);
 
             if (response.success) {
-                alert("Registration successful! You can now log in.");
-                router.replace('/auth/log-in');
+                // Attempt automatic login after successful registration so user returns to browsing flow
+                try {
+                  const loginRes = await apiLogin(email, password);
+                  const tokenFromRes = loginRes?.token || loginRes?.data?.token || loginRes?.access_token || loginRes?.data?.access_token || loginRes?.meta?.token;
+                  const userFromRes = loginRes?.user || loginRes?.data?.user || loginRes?.data || loginRes;
+                  if (tokenFromRes) {
+                    setAuthToken(tokenFromRes);
+                  }
+                  // Persist minimal auth data for other parts of the app
+                  try {
+                    await SecureStore.setItemAsync('HT_auth', JSON.stringify({ user: userFromRes || null, token: tokenFromRes || null, mode: (userFromRes && userFromRes.role) || 'client' }));
+                  } catch (e) {
+                    // ignore storage errors
+                  }
+                  // set role flag used elsewhere
+                  try { await setUserRole('client'); } catch (e) { }
+
+                  // If a redirect param was provided, go there; otherwise go to client home
+                  const redirect = params?.redirect ? String(params.redirect) : null;
+                  if (redirect) {
+                    const dest = decodeURIComponent(redirect);
+                    router.replace(dest as any);
+                  } else {
+                    router.replace('/client-side');
+                  }
+                  return;
+                } catch (err) {
+                  // If auto-login fails, fall back to sending user to login screen
+                  alert("Registration successful. Please log in.");
+                  router.replace('/auth/log-in');
+                  return;
+                }
             }
             else {
                 alert("Registration failed: " + (response.message || "Unknown error"));

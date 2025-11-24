@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 // -----------------------------
 // API Base URL
 // -----------------------------
-export const DEFAULT_API_URL = 'http://192.168.19.13:8081'; // use your actual API port
+export const DEFAULT_API_URL = 'http://192.168.100.13:8081'; // use your actual API port
 
 export const setBaseUrl = async (url) => {
   global.BASE_URL = url;

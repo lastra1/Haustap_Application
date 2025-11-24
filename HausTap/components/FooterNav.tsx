@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useSegments } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useAuth } from "../app/context/AuthContext";
+import { getUserRole } from "../src/config/apiConfig";
 
 export type FooterNavSection = "client" | "provider";
 
@@ -13,8 +13,21 @@ interface FooterNavProps {
 export default function FooterNav({ section }: FooterNavProps) {
   const router = useRouter();
   const segments = useSegments();
-  const { user } = useAuth();
+  const [role, setRole] = useState<string | null>(null);
   const isProvider = section === "provider";
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const r = await getUserRole();
+        if (mounted) setRole(r);
+      } catch (e) {
+        if (mounted) setRole(null);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // Determine which tab is active using segments
   const path = '/' + segments.join('/');
@@ -79,7 +92,8 @@ export default function FooterNav({ section }: FooterNavProps) {
           key={tab.label}
           style={styles.navItem}
           onPress={() => {
-            if (!user && (tab.label === "Bookings" || tab.label === "Chat" || tab.label === "My Account")) {
+            const guestBlocked = !role && (tab.label === "Bookings" || tab.label === "Chat" || tab.label === "My Account");
+            if (guestBlocked) {
               router.push('/signup');
             } else {
               router.push(tab.route as any);
